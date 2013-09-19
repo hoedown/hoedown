@@ -1,8 +1,8 @@
-LIBRARY SUNDOWN
+LIBRARY HOEDOWN
 EXPORTS
-	sdhtml_renderer
-	sdhtml_toc_renderer
-	sdhtml_smartypants
+	hdhtml_renderer
+	hdhtml_toc_renderer
+	hdhtml_smartypants
 	bufgrow
 	bufnew
 	bufcstr
@@ -14,7 +14,7 @@ EXPORTS
 	bufreset
 	bufslurp
 	bufprintf
-	sd_markdown_new
-	sd_markdown_render
-	sd_markdown_free
-	sd_version
+	hd_markdown_new
+	hd_markdown_render
+	hd_markdown_free
+	hd_version

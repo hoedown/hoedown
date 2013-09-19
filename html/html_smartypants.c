@@ -279,7 +279,7 @@ smartypants_cb__ltag(struct buf *ob, struct smartypants_data *smrt, uint8_t prev
 		i++;
 
 	for (tag = 0; tag < skip_tags_count; ++tag) {
-		if (sdhtml_is_tag(text, size, skip_tags[tag]) == HTML_TAG_OPEN)
+		if (hdhtml_is_tag(text, size, skip_tags[tag]) == HTML_TAG_OPEN)
 			break;
 	}
 
@@ -291,7 +291,7 @@ smartypants_cb__ltag(struct buf *ob, struct smartypants_data *smrt, uint8_t prev
 			if (i == size)
 				break;
 
-			if (sdhtml_is_tag(text + i, size - i, skip_tags[tag]) == HTML_TAG_CLOSE)
+			if (hdhtml_is_tag(text + i, size - i, skip_tags[tag]) == HTML_TAG_CLOSE)
 				break;
 
 			i++;
@@ -358,7 +358,7 @@ static struct {
 #endif
 
 void
-sdhtml_smartypants(struct buf *ob, const uint8_t *text, size_t size)
+hdhtml_smartypants(struct buf *ob, const uint8_t *text, size_t size)
 {
 	size_t i;
 	struct smartypants_data smrt = {0, 0};

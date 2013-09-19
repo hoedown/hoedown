@@ -14,8 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef UPSKIRT_HTML_H
-#define UPSKIRT_HTML_H
+#ifndef HOEDOWN_HTML_H
+#define HOEDOWN_HTML_H
 
 #include "markdown.h"
 #include "buffer.h"
@@ -58,16 +58,16 @@ typedef enum {
 } html_tag;
 
 int
-sdhtml_is_tag(const uint8_t *tag_data, size_t tag_size, const char *tagname);
+hdhtml_is_tag(const uint8_t *tag_data, size_t tag_size, const char *tagname);
 
 extern void
-sdhtml_renderer(struct sd_callbacks *callbacks, struct html_renderopt *options_ptr, unsigned int render_flags);
+hdhtml_renderer(struct hd_callbacks *callbacks, struct html_renderopt *options_ptr, unsigned int render_flags);
 
 extern void
-sdhtml_toc_renderer(struct sd_callbacks *callbacks, struct html_renderopt *options_ptr);
+hdhtml_toc_renderer(struct hd_callbacks *callbacks, struct html_renderopt *options_ptr);
 
 extern void
-sdhtml_smartypants(struct buf *ob, const uint8_t *text, size_t size);
+hdhtml_smartypants(struct buf *ob, const uint8_t *text, size_t size);
 
 #ifdef __cplusplus
 }

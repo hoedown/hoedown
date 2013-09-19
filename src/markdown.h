@@ -16,8 +16,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef UPSKIRT_MARKDOWN_H
-#define UPSKIRT_MARKDOWN_H
+#ifndef HOEDOWN_MARKDOWN_H
+#define HOEDOWN_MARKDOWN_H
 
 #include "buffer.h"
 #include "autolink.h"
@@ -26,10 +26,10 @@
 extern "C" {
 #endif
 
-#define SUNDOWN_VERSION "1.16.0"
-#define SUNDOWN_VER_MAJOR 1
-#define SUNDOWN_VER_MINOR 16
-#define SUNDOWN_VER_REVISION 0
+#define HOEDOWN_VERSION "1.16.0"
+#define HOEDOWN_VER_MAJOR 1
+#define HOEDOWN_VER_MINOR 16
+#define HOEDOWN_VER_REVISION 0
 
 /********************
  * TYPE DEFINITIONS *
@@ -62,8 +62,8 @@ enum mkd_extensions {
 	MKDEXT_FOOTNOTES = (1 << 9),
 };
 
-/* sd_callbacks - functions for rendering parsed data */
-struct sd_callbacks {
+/* hd_callbacks - functions for rendering parsed data */
+struct hd_callbacks {
 	/* block level callbacks - NULL skips the block */
 	void (*blockcode)(struct buf *ob, const struct buf *text, const struct buf *lang, void *opaque);
 	void (*blockquote)(struct buf *ob, const struct buf *text, void *opaque);
@@ -102,7 +102,7 @@ struct sd_callbacks {
 	void (*doc_footer)(struct buf *ob, void *opaque);
 };
 
-struct sd_markdown;
+struct hd_markdown;
 
 /*********
  * FLAGS *
@@ -116,21 +116,21 @@ struct sd_markdown;
  * EXPORTED FUNCTIONS *
  **********************/
 
-extern struct sd_markdown *
-sd_markdown_new(
+extern struct hd_markdown *
+hd_markdown_new(
 	unsigned int extensions,
 	size_t max_nesting,
-	const struct sd_callbacks *callbacks,
+	const struct hd_callbacks *callbacks,
 	void *opaque);
 
 extern void
-sd_markdown_render(struct buf *ob, const uint8_t *document, size_t doc_size, struct sd_markdown *md);
+hd_markdown_render(struct buf *ob, const uint8_t *document, size_t doc_size, struct hd_markdown *md);
 
 extern void
-sd_markdown_free(struct sd_markdown *md);
+hd_markdown_free(struct hd_markdown *md);
 
 extern void
-sd_version(int *major, int *minor, int *revision);
+hd_version(int *major, int *minor, int *revision);
 
 #ifdef __cplusplus
 }
