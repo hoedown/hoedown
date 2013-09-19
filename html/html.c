@@ -28,7 +28,7 @@
 #define USE_XHTML(opt) (opt->flags & HTML_USE_XHTML)
 
 int
-sdhtml_is_tag(const uint8_t *tag_data, size_t tag_size, const char *tagname)
+hdhtml_is_tag(const uint8_t *tag_data, size_t tag_size, const char *tagname)
 {
 	size_t i;
 	int closed = 0;
@@ -82,7 +82,7 @@ rndr_autolink(struct buf *ob, const struct buf *link, enum mkd_autolink type, vo
 		return 0;
 
 	if ((options->flags & HTML_SAFELINK) != 0 &&
-		!sd_autolink_issafe(link->data, link->size) &&
+		!hd_autolink_issafe(link->data, link->size) &&
 		type != MKDA_EMAIL)
 		return 0;
 
@@ -234,7 +234,7 @@ rndr_link(struct buf *ob, const struct buf *link, const struct buf *title, const
 {
 	struct html_renderopt *options = opaque;
 
-	if (link != NULL && (options->flags & HTML_SAFELINK) != 0 && !sd_autolink_issafe(link->data, link->size))
+	if (link != NULL && (options->flags & HTML_SAFELINK) != 0 && !hd_autolink_issafe(link->data, link->size))
 		return 0;
 
 	BUFPUTSL(ob, "<a href=\"");
@@ -396,15 +396,15 @@ rndr_raw_html(struct buf *ob, const struct buf *text, void *opaque)
 		return 1;
 
 	if ((options->flags & HTML_SKIP_STYLE) != 0 &&
-		sdhtml_is_tag(text->data, text->size, "style"))
+		hdhtml_is_tag(text->data, text->size, "style"))
 		return 1;
 
 	if ((options->flags & HTML_SKIP_LINKS) != 0 &&
-		sdhtml_is_tag(text->data, text->size, "a"))
+		hdhtml_is_tag(text->data, text->size, "a"))
 		return 1;
 
 	if ((options->flags & HTML_SKIP_IMAGES) != 0 &&
-		sdhtml_is_tag(text->data, text->size, "img"))
+		hdhtml_is_tag(text->data, text->size, "img"))
 		return 1;
 
 	bufput(ob, text->data, text->size);
@@ -588,9 +588,9 @@ toc_finalize(struct buf *ob, void *opaque)
 }
 
 void
-sdhtml_toc_renderer(struct sd_callbacks *callbacks, struct html_renderopt *options)
+hdhtml_toc_renderer(struct hd_callbacks *callbacks, struct html_renderopt *options)
 {
-	static const struct sd_callbacks cb_default = {
+	static const struct hd_callbacks cb_default = {
 		NULL,
 		NULL,
 		NULL,
@@ -628,13 +628,13 @@ sdhtml_toc_renderer(struct sd_callbacks *callbacks, struct html_renderopt *optio
 	memset(options, 0x0, sizeof(struct html_renderopt));
 	options->flags = HTML_TOC;
 
-	memcpy(callbacks, &cb_default, sizeof(struct sd_callbacks));
+	memcpy(callbacks, &cb_default, sizeof(struct hd_callbacks));
 }
 
 void
-sdhtml_renderer(struct sd_callbacks *callbacks, struct html_renderopt *options, unsigned int render_flags)
+hdhtml_renderer(struct hd_callbacks *callbacks, struct html_renderopt *options, unsigned int render_flags)
 {
-	static const struct sd_callbacks cb_default = {
+	static const struct hd_callbacks cb_default = {
 		rndr_blockcode,
 		rndr_blockquote,
 		rndr_raw_block,
@@ -674,7 +674,7 @@ sdhtml_renderer(struct sd_callbacks *callbacks, struct html_renderopt *options, 
 	options->flags = render_flags;
 
 	/* Prepare the callbacks */
-	memcpy(callbacks, &cb_default, sizeof(struct sd_callbacks));
+	memcpy(callbacks, &cb_default, sizeof(struct hd_callbacks));
 
 	if (render_flags & HTML_SKIP_IMAGES)
 		callbacks->image = NULL;

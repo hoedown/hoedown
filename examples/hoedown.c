@@ -34,9 +34,9 @@ main(int argc, char **argv)
 	int ret;
 	FILE *in = stdin;
 
-	struct sd_callbacks callbacks;
+	struct hd_callbacks callbacks;
 	struct html_renderopt options;
-	struct sd_markdown *markdown;
+	struct hd_markdown *markdown;
 
 	/* opening the file if given from the command line */
 	if (argc > 1) {
@@ -61,11 +61,11 @@ main(int argc, char **argv)
 	/* performing markdown parsing */
 	ob = bufnew(OUTPUT_UNIT);
 
-	sdhtml_renderer(&callbacks, &options, 0);
-	markdown = sd_markdown_new(0, 16, &callbacks, &options);
+	hdhtml_renderer(&callbacks, &options, 0);
+	markdown = hd_markdown_new(0, 16, &callbacks, &options);
 
-	sd_markdown_render(ob, ib->data, ib->size, markdown);
-	sd_markdown_free(markdown);
+	hd_markdown_render(ob, ib->data, ib->size, markdown);
+	hd_markdown_free(markdown);
 
 	/* writing the result to stdout */
 	ret = fwrite(ob->data, 1, ob->size, stdout);

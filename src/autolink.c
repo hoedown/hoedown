@@ -27,7 +27,7 @@
 #endif
 
 int
-sd_autolink_issafe(const uint8_t *link, size_t link_len)
+hd_autolink_issafe(const uint8_t *link, size_t link_len)
 {
 	static const size_t valid_uris_count = 5;
 	static const char *valid_uris[] = {
@@ -159,7 +159,7 @@ check_domain(uint8_t *data, size_t size, int allow_short)
 }
 
 size_t
-sd_autolink__www(
+hd_autolink__www(
 	size_t *rewind_p,
 	struct buf *link,
 	uint8_t *data,
@@ -195,7 +195,7 @@ sd_autolink__www(
 }
 
 size_t
-sd_autolink__email(
+hd_autolink__email(
 	size_t *rewind_p,
 	struct buf *link,
 	uint8_t *data,
@@ -251,7 +251,7 @@ sd_autolink__email(
 }
 
 size_t
-sd_autolink__url(
+hd_autolink__url(
 	size_t *rewind_p,
 	struct buf *link,
 	uint8_t *data,
@@ -267,7 +267,7 @@ sd_autolink__url(
 	while (rewind < max_rewind && isalpha(data[-rewind - 1]))
 		rewind++;
 
-	if (!sd_autolink_issafe(data - rewind, size + rewind))
+	if (!hd_autolink_issafe(data - rewind, size + rewind))
 		return 0;
 
 	link_end = strlen("://");
@@ -275,7 +275,7 @@ sd_autolink__url(
 	domain_len = check_domain(
 		data + link_end,
 		size - link_end,
-		flags & SD_AUTOLINK_SHORT_DOMAINS);
+		flags & HD_AUTOLINK_SHORT_DOMAINS);
 
 	if (domain_len == 0)
 		return 0;

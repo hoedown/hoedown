@@ -1,0 +1,20 @@
+LIBRARY HOEDOWN
+EXPORTS
+	hdhtml_renderer
+	hdhtml_toc_renderer
+	hdhtml_smartypants
+	bufgrow
+	bufnew
+	bufcstr
+	bufprefix
+	bufput 
+	bufputs
+	bufputc
+	bufrelease
+	bufreset
+	bufslurp
+	bufprintf
+	hd_markdown_new
+	hd_markdown_render
+	hd_markdown_free
+	hd_version
