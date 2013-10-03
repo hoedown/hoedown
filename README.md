@@ -58,7 +58,7 @@ Bindings
 --------
 
 You can see a community-maintained list of `Hoedown` bindings at
-[the wiki](https://github.com/devinus/hoedown/wiki/Bindings). There is also a
+[the wiki](https://github.com/hoedown/hoedown/wiki/Bindings). There is also a
 [migration guide](https://github.com/hoedown/hoedown/wiki/Migration-Guide)
 available for authors of Sundown bindings.
 
@@ -67,7 +67,7 @@ Help us
 
 `Hoedown` is all about security. If you find a (potential) security vulnerability in the
 library, or a way to make it crash through malicious input, please report it to us,
-by leaving an Issue at <https://github.com/devinus/hoedown/issues/new>.
+by leaving an [Issue](https://github.com/hoedown/hoedown/issues/new).
 
 Unicode character handling
 --------------------------
