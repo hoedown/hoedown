@@ -96,7 +96,7 @@ hoedown_buffer_puts(hoedown_buffer *buf, const char *str)
 
 /* hoedown_buffer_putc: appends a single uint8_t to a buffer */
 void
-hoedown_buffer_putc(hoedown_buffer *buf, int c)
+hoedown_buffer_putc(hoedown_buffer *buf, uint8_t c)
 {
 	assert(buf && buf->unit);
 
