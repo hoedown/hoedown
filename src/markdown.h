@@ -50,8 +50,8 @@ enum hoedown_extensions {
 	HOEDOWN_EXT_QUOTE = (1 << 12)
 };
 
-/* hoedown_callbacks - functions for rendering parsed data */
-struct hoedown_callbacks {
+/* hoedown_renderer - functions for rendering parsed data */
+struct hoedown_renderer {
 	/* block level callbacks - NULL skips the block */
 	void (*blockcode)(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buffer *lang, void *opaque);
 	void (*blockquote)(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque);
@@ -91,9 +91,12 @@ struct hoedown_callbacks {
 	/* header and footer */
 	void (*doc_header)(hoedown_buffer *ob, void *opaque);
 	void (*doc_footer)(hoedown_buffer *ob, void *opaque);
+
+	/* cookie */
+	void *opaque;
 };
 
-typedef struct hoedown_callbacks hoedown_callbacks;
+typedef struct hoedown_renderer hoedown_renderer;
 
 struct hoedown_markdown;
 
@@ -115,8 +118,7 @@ extern hoedown_markdown *
 hoedown_markdown_new(
 	unsigned int extensions,
 	size_t max_nesting,
-	const hoedown_callbacks *callbacks,
-	void *opaque);
+	const hoedown_renderer *callbacks);
 
 extern void
 hoedown_markdown_render(hoedown_buffer *ob, const uint8_t *document, size_t doc_size, hoedown_markdown *md);

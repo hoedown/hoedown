@@ -9,6 +9,22 @@
 
 #define USE_XHTML(opt) (opt->flags & HOEDOWN_HTML_USE_XHTML)
 
+struct hoedown_html_renderopt {
+	struct {
+		int header_count;
+		int current_level;
+		int level_offset;
+		int nesting_level;
+	} toc_data;
+
+	unsigned int flags;
+
+	/* extra callbacks */
+	void (*link_attributes)(hoedown_buffer *ob, const hoedown_buffer *url, void *self);
+};
+
+typedef struct hoedown_html_renderopt hoedown_html_renderopt;
+
 int
 hoedown_html_is_tag(const uint8_t *tag_data, size_t tag_size, const char *tagname)
 {
@@ -628,10 +644,10 @@ toc_finalize(hoedown_buffer *ob, void *opaque)
 	}
 }
 
-void
-hoedown_html_toc_renderer(hoedown_callbacks *callbacks, hoedown_html_renderopt *options, int nesting_level)
+hoedown_renderer *
+hoedown_html_toc_renderer_new(int nesting_level)
 {
-	static const hoedown_callbacks cb_default = {
+	static const hoedown_renderer cb_default = {
 		NULL,
 		NULL,
 		NULL,
@@ -667,22 +683,36 @@ hoedown_html_toc_renderer(hoedown_callbacks *callbacks, hoedown_html_renderopt *
 
 		NULL,
 		toc_finalize,
+		
+		NULL
 	};
 
-	memcpy(callbacks, &cb_default, sizeof(hoedown_callbacks));
+	hoedown_html_renderopt *options;
+	hoedown_renderer       *renderer;
 
-	memset(options, 0, sizeof(hoedown_html_renderopt));
+	/* Prepare the options pointer */
+	options = malloc(sizeof(hoedown_html_renderopt));
+	if (!options) return NULL;
+	memset(options, 0x0, sizeof(hoedown_html_renderopt));
 
 	if (nesting_level > 0) {
 		options->flags |= HOEDOWN_HTML_TOC;
 		options->toc_data.nesting_level = nesting_level;
 	}
+
+	/* Prepare the renderer */
+	renderer = malloc(sizeof(hoedown_renderer));
+	if (!renderer) {free(options); return NULL;}
+	memcpy(renderer, &cb_default, sizeof(hoedown_renderer));
+	
+	renderer->opaque = options;
+	return renderer;
 }
 
-void
-hoedown_html_renderer(hoedown_callbacks *callbacks, hoedown_html_renderopt *options, unsigned int render_flags, int nesting_level)
+hoedown_renderer *
+hoedown_html_renderer_new(unsigned int render_flags, int nesting_level)
 {
-	static const hoedown_callbacks cb_default = {
+	static const hoedown_renderer cb_default = {
 		rndr_blockcode,
 		rndr_blockquote,
 		rndr_raw_block,
@@ -718,10 +748,18 @@ hoedown_html_renderer(hoedown_callbacks *callbacks, hoedown_html_renderopt *opti
 
 		NULL,
 		NULL,
+		
+		NULL
 	};
 
+	hoedown_html_renderopt *options;
+	hoedown_renderer       *renderer;
+
 	/* Prepare the options pointer */
+	options = malloc(sizeof(hoedown_html_renderopt));
+	if (!options) return NULL;
 	memset(options, 0x0, sizeof(hoedown_html_renderopt));
+
 	options->flags = render_flags;
 
 	if (nesting_level > 0) {
@@ -729,17 +767,29 @@ hoedown_html_renderer(hoedown_callbacks *callbacks, hoedown_html_renderopt *opti
 		options->toc_data.nesting_level = nesting_level;
 	}
 
-	/* Prepare the callbacks */
-	memcpy(callbacks, &cb_default, sizeof(hoedown_callbacks));
+	/* Prepare the renderer */
+	renderer = malloc(sizeof(hoedown_renderer));
+	if (!renderer) {free(options); return NULL;}
+	memcpy(renderer, &cb_default, sizeof(hoedown_renderer));
 
 	if (render_flags & HOEDOWN_HTML_SKIP_IMAGES)
-		callbacks->image = NULL;
+		renderer->image = NULL;
 
 	if (render_flags & HOEDOWN_HTML_SKIP_LINKS) {
-		callbacks->link = NULL;
-		callbacks->autolink = NULL;
+		renderer->link = NULL;
+		renderer->autolink = NULL;
 	}
 
 	if (render_flags & HOEDOWN_HTML_SKIP_HTML || render_flags & HOEDOWN_HTML_ESCAPE)
-		callbacks->blockhtml = NULL;
+		renderer->blockhtml = NULL;
+	
+	renderer->opaque = options;
+	return renderer;
+}
+
+extern void
+hoedown_html_renderer_free(hoedown_renderer *renderer)
+{
+  free(renderer->opaque);
+  free(renderer);
 }

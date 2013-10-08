@@ -18,8 +18,9 @@ EXPORTS
 	hoedown_escape_html
 	hoedown_escape_href
 	hoedown_html_is_tag
-	hoedown_html_renderer
-	hoedown_html_toc_renderer
+	hoedown_html_renderer_new
+	hoedown_html_toc_renderer_new
+	hoedown_html_renderer_free
 	hoedown_html_smartypants
 	hoedown_markdown_new
 	hoedown_markdown_render

@@ -15,8 +15,7 @@ main(int argc, char **argv)
 	hoedown_buffer *ib, *ob;
 	FILE *in = stdin;
 
-	hoedown_callbacks callbacks;
-	hoedown_html_renderopt options;
+	hoedown_renderer *renderer;
 	struct hoedown_markdown *markdown;
 
 	/* opening the file if given from the command line */
@@ -41,11 +40,13 @@ main(int argc, char **argv)
 	/* performing markdown parsing */
 	ob = hoedown_buffer_new(OUTPUT_UNIT);
 
-	hoedown_html_renderer(&callbacks, &options, 0, 0);
-	markdown = hoedown_markdown_new(0, 16, &callbacks, &options);
+	renderer = hoedown_html_renderer_new(0, 0);
+	markdown = hoedown_markdown_new(0, 16, renderer);
 
 	hoedown_markdown_render(ob, ib->data, ib->size, markdown);
+
 	hoedown_markdown_free(markdown);
+	hoedown_html_renderer_free(renderer);
 
 	/* writing the result to stdout */
 	(void)fwrite(ob->data, 1, ob->size, stdout);
