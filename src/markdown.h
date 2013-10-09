@@ -92,7 +92,7 @@ struct hoedown_renderer {
 	void (*doc_header)(hoedown_buffer *ob, void *opaque);
 	void (*doc_footer)(hoedown_buffer *ob, void *opaque);
 
-	/* cookie */
+	/* state object */
 	void *opaque;
 };
 
@@ -118,7 +118,7 @@ extern hoedown_markdown *
 hoedown_markdown_new(
 	unsigned int extensions,
 	size_t max_nesting,
-	const hoedown_renderer *callbacks);
+	const hoedown_renderer *renderer);
 
 extern void
 hoedown_markdown_render(hoedown_buffer *ob, const uint8_t *document, size_t doc_size, hoedown_markdown *md);

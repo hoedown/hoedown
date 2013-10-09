@@ -16,7 +16,7 @@ main(int argc, char **argv)
 	FILE *in = stdin;
 
 	hoedown_renderer *renderer;
-	struct hoedown_markdown *markdown;
+	hoedown_markdown *markdown;
 
 	/* opening the file if given from the command line */
 	if (argc > 1) {

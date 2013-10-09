@@ -9,7 +9,7 @@
 
 #define USE_XHTML(opt) (opt->flags & HOEDOWN_HTML_USE_XHTML)
 
-struct hoedown_html_renderopt {
+struct rndr_state {
 	struct {
 		int header_count;
 		int current_level;
@@ -23,7 +23,7 @@ struct hoedown_html_renderopt {
 	void (*link_attributes)(hoedown_buffer *ob, const hoedown_buffer *url, void *self);
 };
 
-typedef struct hoedown_html_renderopt hoedown_html_renderopt;
+typedef struct rndr_state rndr_state;
 
 int
 hoedown_html_is_tag(const uint8_t *tag_data, size_t tag_size, const char *tagname)
@@ -74,12 +74,12 @@ static inline void escape_href(hoedown_buffer *ob, const uint8_t *source, size_t
 static int
 rndr_autolink(hoedown_buffer *ob, const hoedown_buffer *link, enum hoedown_autolink type, void *opaque)
 {
-	hoedown_html_renderopt *options = opaque;
+	rndr_state *state = opaque;
 
 	if (!link || !link->size)
 		return 0;
 
-	if ((options->flags & HOEDOWN_HTML_SAFELINK) != 0 &&
+	if ((state->flags & HOEDOWN_HTML_SAFELINK) != 0 &&
 		!hoedown_autolink_is_safe(link->data, link->size) &&
 		type != HOEDOWN_AUTOLINK_EMAIL)
 		return 0;
@@ -89,9 +89,9 @@ rndr_autolink(hoedown_buffer *ob, const hoedown_buffer *link, enum hoedown_autol
 		HOEDOWN_BUFPUTSL(ob, "mailto:");
 	escape_href(ob, link->data, link->size);
 
-	if (options->link_attributes) {
+	if (state->link_attributes) {
 		hoedown_buffer_putc(ob, '\"');
-		options->link_attributes(ob, link, opaque);
+		state->link_attributes(ob, link, opaque);
 		hoedown_buffer_putc(ob, '>');
 	} else {
 		HOEDOWN_BUFPUTSL(ob, "\">");
@@ -116,13 +116,13 @@ rndr_autolink(hoedown_buffer *ob, const hoedown_buffer *link, enum hoedown_autol
 static void
 rndr_blockcode(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buffer *lang, void *opaque)
 {
-	hoedown_html_renderopt *options = opaque;
+	rndr_state *state = opaque;
 
 	if (ob->size) hoedown_buffer_putc(ob, '\n');
 
 	if (lang && lang->size) {
 		size_t i, cls = 0;
-		if (options->flags & HOEDOWN_HTML_PRETTIFY) {
+		if (state->flags & HOEDOWN_HTML_PRETTIFY) {
 			HOEDOWN_BUFPUTSL(ob, "<pre><code class=\"prettyprint");
 			cls++;
 		} else {
@@ -147,7 +147,7 @@ rndr_blockcode(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buf
 		}
 
 		HOEDOWN_BUFPUTSL(ob, "\">");
-	} else if (options->flags & HOEDOWN_HTML_PRETTIFY) {
+	} else if (state->flags & HOEDOWN_HTML_PRETTIFY) {
 		HOEDOWN_BUFPUTSL(ob, "<pre><code class=\"prettyprint\">");
 	} else {
 		HOEDOWN_BUFPUTSL(ob, "<pre><code>");
@@ -171,8 +171,8 @@ rndr_blockquote(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque)
 static int
 rndr_codespan(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque)
 {
-	hoedown_html_renderopt *options = opaque;
-	if (options->flags & HOEDOWN_HTML_PRETTIFY)
+	rndr_state *state = opaque;
+	if (state->flags & HOEDOWN_HTML_PRETTIFY)
 		HOEDOWN_BUFPUTSL(ob, "<code class=\"prettyprint\">");
 	else
 		HOEDOWN_BUFPUTSL(ob, "<code>");
@@ -258,21 +258,21 @@ rndr_quote(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque)
 static int
 rndr_linebreak(hoedown_buffer *ob, void *opaque)
 {
-	hoedown_html_renderopt *options = opaque;
-	hoedown_buffer_puts(ob, USE_XHTML(options) ? "<br/>\n" : "<br>\n");
+	rndr_state *state = opaque;
+	hoedown_buffer_puts(ob, USE_XHTML(state) ? "<br/>\n" : "<br>\n");
 	return 1;
 }
 
 static void
 rndr_header(hoedown_buffer *ob, const hoedown_buffer *text, int level, void *opaque)
 {
-	hoedown_html_renderopt *options = opaque;
+	rndr_state *state = opaque;
 
 	if (ob->size)
 		hoedown_buffer_putc(ob, '\n');
 
-	if ((options->flags & HOEDOWN_HTML_TOC) && (level <= options->toc_data.nesting_level))
-		hoedown_buffer_printf(ob, "<h%d id=\"toc_%d\">", level, options->toc_data.header_count++);
+	if ((state->flags & HOEDOWN_HTML_TOC) && (level <= state->toc_data.nesting_level))
+		hoedown_buffer_printf(ob, "<h%d id=\"toc_%d\">", level, state->toc_data.header_count++);
 	else
 		hoedown_buffer_printf(ob, "<h%d>", level);
 
@@ -283,9 +283,9 @@ rndr_header(hoedown_buffer *ob, const hoedown_buffer *text, int level, void *opa
 static int
 rndr_link(hoedown_buffer *ob, const hoedown_buffer *link, const hoedown_buffer *title, const hoedown_buffer *content, void *opaque)
 {
-	hoedown_html_renderopt *options = opaque;
+	rndr_state *state = opaque;
 
-	if (link != NULL && (options->flags & HOEDOWN_HTML_SAFELINK) != 0 && !hoedown_autolink_is_safe(link->data, link->size))
+	if (link != NULL && (state->flags & HOEDOWN_HTML_SAFELINK) != 0 && !hoedown_autolink_is_safe(link->data, link->size))
 		return 0;
 
 	HOEDOWN_BUFPUTSL(ob, "<a href=\"");
@@ -298,9 +298,9 @@ rndr_link(hoedown_buffer *ob, const hoedown_buffer *link, const hoedown_buffer *
 		escape_html(ob, title->data, title->size);
 	}
 
-	if (options->link_attributes) {
+	if (state->link_attributes) {
 		hoedown_buffer_putc(ob, '\"');
-		options->link_attributes(ob, link, opaque);
+		state->link_attributes(ob, link, opaque);
 		hoedown_buffer_putc(ob, '>');
 	} else {
 		HOEDOWN_BUFPUTSL(ob, "\">");
@@ -337,7 +337,7 @@ rndr_listitem(hoedown_buffer *ob, const hoedown_buffer *text, int flags, void *o
 static void
 rndr_paragraph(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque)
 {
-	hoedown_html_renderopt *options = opaque;
+	rndr_state *state = opaque;
 	size_t i = 0;
 
 	if (ob->size) hoedown_buffer_putc(ob, '\n');
@@ -351,7 +351,7 @@ rndr_paragraph(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque)
 		return;
 
 	HOEDOWN_BUFPUTSL(ob, "<p>");
-	if (options->flags & HOEDOWN_HTML_HARD_WRAP) {
+	if (state->flags & HOEDOWN_HTML_HARD_WRAP) {
 		size_t org;
 		while (i < text->size) {
 			org = i;
@@ -405,15 +405,15 @@ rndr_triple_emphasis(hoedown_buffer *ob, const hoedown_buffer *text, void *opaqu
 static void
 rndr_hrule(hoedown_buffer *ob, void *opaque)
 {
-	hoedown_html_renderopt *options = opaque;
+	rndr_state *state = opaque;
 	if (ob->size) hoedown_buffer_putc(ob, '\n');
-	hoedown_buffer_puts(ob, USE_XHTML(options) ? "<hr/>\n" : "<hr>\n");
+	hoedown_buffer_puts(ob, USE_XHTML(state) ? "<hr/>\n" : "<hr>\n");
 }
 
 static int
 rndr_image(hoedown_buffer *ob, const hoedown_buffer *link, const hoedown_buffer *title, const hoedown_buffer *alt, void *opaque)
 {
-	hoedown_html_renderopt *options = opaque;
+	rndr_state *state = opaque;
 	if (!link || !link->size) return 0;
 
 	HOEDOWN_BUFPUTSL(ob, "<img src=\"");
@@ -427,34 +427,34 @@ rndr_image(hoedown_buffer *ob, const hoedown_buffer *link, const hoedown_buffer 
 		HOEDOWN_BUFPUTSL(ob, "\" title=\"");
 		escape_html(ob, title->data, title->size); }
 
-	hoedown_buffer_puts(ob, USE_XHTML(options) ? "\"/>" : "\">");
+	hoedown_buffer_puts(ob, USE_XHTML(state) ? "\"/>" : "\">");
 	return 1;
 }
 
 static int
 rndr_raw_html(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque)
 {
-	hoedown_html_renderopt *options = opaque;
+	rndr_state *state = opaque;
 
 	/* HTML_ESCAPE overrides SKIP_HTML, SKIP_STYLE, SKIP_LINKS and SKIP_IMAGES
 	* It doens't see if there are any valid tags, just escape all of them. */
-	if((options->flags & HOEDOWN_HTML_ESCAPE) != 0) {
+	if((state->flags & HOEDOWN_HTML_ESCAPE) != 0) {
 		escape_html(ob, text->data, text->size);
 		return 1;
 	}
 
-	if ((options->flags & HOEDOWN_HTML_SKIP_HTML) != 0)
+	if ((state->flags & HOEDOWN_HTML_SKIP_HTML) != 0)
 		return 1;
 
-	if ((options->flags & HOEDOWN_HTML_SKIP_STYLE) != 0 &&
+	if ((state->flags & HOEDOWN_HTML_SKIP_STYLE) != 0 &&
 		hoedown_html_is_tag(text->data, text->size, "style"))
 		return 1;
 
-	if ((options->flags & HOEDOWN_HTML_SKIP_LINKS) != 0 &&
+	if ((state->flags & HOEDOWN_HTML_SKIP_LINKS) != 0 &&
 		hoedown_html_is_tag(text->data, text->size, "a"))
 		return 1;
 
-	if ((options->flags & HOEDOWN_HTML_SKIP_IMAGES) != 0 &&
+	if ((state->flags & HOEDOWN_HTML_SKIP_IMAGES) != 0 &&
 		hoedown_html_is_tag(text->data, text->size, "img"))
 		return 1;
 
@@ -540,11 +540,11 @@ rndr_normal_text(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque)
 static void
 rndr_footnotes(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque)
 {
-	hoedown_html_renderopt *options = opaque;
+	rndr_state *state = opaque;
 
 	if (ob->size) hoedown_buffer_putc(ob, '\n');
 	HOEDOWN_BUFPUTSL(ob, "<div class=\"footnotes\">\n");
-	hoedown_buffer_puts(ob, USE_XHTML(options) ? "<hr/>\n" : "<hr>\n");
+	hoedown_buffer_puts(ob, USE_XHTML(state) ? "<hr/>\n" : "<hr>\n");
 	HOEDOWN_BUFPUTSL(ob, "<ol>\n");
 	
 	if (text)
@@ -593,33 +593,33 @@ rndr_footnote_ref(hoedown_buffer *ob, unsigned int num, void *opaque)
 static void
 toc_header(hoedown_buffer *ob, const hoedown_buffer *text, int level, void *opaque)
 {
-	hoedown_html_renderopt *options = opaque;
+	rndr_state *state = opaque;
 
-	if (level <= options->toc_data.nesting_level) {
+	if (level <= state->toc_data.nesting_level) {
 		/* set the level offset if this is the first header
 		 * we're parsing for the document */
-		if (options->toc_data.current_level == 0)
-			options->toc_data.level_offset = level - 1;
+		if (state->toc_data.current_level == 0)
+			state->toc_data.level_offset = level - 1;
 
-		level -= options->toc_data.level_offset;
+		level -= state->toc_data.level_offset;
 
-		if (level > options->toc_data.current_level) {
-			while (level > options->toc_data.current_level) {
+		if (level > state->toc_data.current_level) {
+			while (level > state->toc_data.current_level) {
 				HOEDOWN_BUFPUTSL(ob, "<ul>\n<li>\n");
-				options->toc_data.current_level++;
+				state->toc_data.current_level++;
 			}
-		} else if (level < options->toc_data.current_level) {
+		} else if (level < state->toc_data.current_level) {
 			HOEDOWN_BUFPUTSL(ob, "</li>\n");
-			while (level < options->toc_data.current_level) {
+			while (level < state->toc_data.current_level) {
 				HOEDOWN_BUFPUTSL(ob, "</ul>\n</li>\n");
-				options->toc_data.current_level--;
+				state->toc_data.current_level--;
 			}
 			HOEDOWN_BUFPUTSL(ob,"<li>\n");
 		} else {
 			HOEDOWN_BUFPUTSL(ob,"</li>\n<li>\n");
 		}
 
-		hoedown_buffer_printf(ob, "<a href=\"#toc_%d\">", options->toc_data.header_count++);
+		hoedown_buffer_printf(ob, "<a href=\"#toc_%d\">", state->toc_data.header_count++);
 		if (text) escape_html(ob, text->data, text->size);
 		HOEDOWN_BUFPUTSL(ob, "</a>\n");
 	}
@@ -636,11 +636,11 @@ toc_link(hoedown_buffer *ob, const hoedown_buffer *link, const hoedown_buffer *t
 static void
 toc_finalize(hoedown_buffer *ob, void *opaque)
 {
-	hoedown_html_renderopt *options = opaque;
+	rndr_state *state = opaque;
 
-	while (options->toc_data.current_level > 0) {
+	while (state->toc_data.current_level > 0) {
 		HOEDOWN_BUFPUTSL(ob, "</li>\n</ul>\n");
-		options->toc_data.current_level--;
+		state->toc_data.current_level--;
 	}
 }
 
@@ -687,25 +687,25 @@ hoedown_html_toc_renderer_new(int nesting_level)
 		NULL
 	};
 
-	hoedown_html_renderopt *options;
-	hoedown_renderer       *renderer;
+	rndr_state       *state;
+	hoedown_renderer *renderer;
 
-	/* Prepare the options pointer */
-	options = malloc(sizeof(hoedown_html_renderopt));
-	if (!options) return NULL;
-	memset(options, 0x0, sizeof(hoedown_html_renderopt));
+	/* Prepare the state pointer */
+	state = malloc(sizeof(rndr_state));
+	if (!state) return NULL;
+	memset(state, 0x0, sizeof(rndr_state));
 
 	if (nesting_level > 0) {
-		options->flags |= HOEDOWN_HTML_TOC;
-		options->toc_data.nesting_level = nesting_level;
+		state->flags |= HOEDOWN_HTML_TOC;
+		state->toc_data.nesting_level = nesting_level;
 	}
 
 	/* Prepare the renderer */
 	renderer = malloc(sizeof(hoedown_renderer));
-	if (!renderer) {free(options); return NULL;}
+	if (!renderer) {free(state); return NULL;}
 	memcpy(renderer, &cb_default, sizeof(hoedown_renderer));
 	
-	renderer->opaque = options;
+	renderer->opaque = state;
 	return renderer;
 }
 
@@ -752,24 +752,24 @@ hoedown_html_renderer_new(unsigned int render_flags, int nesting_level)
 		NULL
 	};
 
-	hoedown_html_renderopt *options;
-	hoedown_renderer       *renderer;
+	rndr_state       *state;
+	hoedown_renderer *renderer;
 
-	/* Prepare the options pointer */
-	options = malloc(sizeof(hoedown_html_renderopt));
-	if (!options) return NULL;
-	memset(options, 0x0, sizeof(hoedown_html_renderopt));
+	/* Prepare the state pointer */
+	state = malloc(sizeof(rndr_state));
+	if (!state) return NULL;
+	memset(state, 0x0, sizeof(rndr_state));
 
-	options->flags = render_flags;
+	state->flags = render_flags;
 
 	if (nesting_level > 0) {
-		options->flags |= HOEDOWN_HTML_TOC;
-		options->toc_data.nesting_level = nesting_level;
+		state->flags |= HOEDOWN_HTML_TOC;
+		state->toc_data.nesting_level = nesting_level;
 	}
 
 	/* Prepare the renderer */
 	renderer = malloc(sizeof(hoedown_renderer));
-	if (!renderer) {free(options); return NULL;}
+	if (!renderer) {free(state); return NULL;}
 	memcpy(renderer, &cb_default, sizeof(hoedown_renderer));
 
 	if (render_flags & HOEDOWN_HTML_SKIP_IMAGES)
@@ -783,7 +783,7 @@ hoedown_html_renderer_new(unsigned int render_flags, int nesting_level)
 	if (render_flags & HOEDOWN_HTML_SKIP_HTML || render_flags & HOEDOWN_HTML_ESCAPE)
 		renderer->blockhtml = NULL;
 	
-	renderer->opaque = options;
+	renderer->opaque = state;
 	return renderer;
 }
 
