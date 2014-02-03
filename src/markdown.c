@@ -2727,22 +2727,24 @@ hoedown_markdown_new(
 	return md;
 }
 
-void
+int
 hoedown_markdown_render(hoedown_buffer *ob, const uint8_t *document, size_t doc_size, hoedown_markdown *md)
 {
 	static const uint8_t UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
 
 	hoedown_buffer *text;
 	size_t beg, end;
-
 	int footnotes_enabled;
+	int err;
 
 	text = hoedown_buffer_new(64);
 	if (!text)
-		return;
+		return HOEDOWN_BUF_ENOMEM;
 
 	/* Preallocate enough space for our buffer to avoid expanding while copying */
-	hoedown_buffer_grow(text, doc_size);
+	err = hoedown_buffer_grow(text, doc_size);
+	if (err != HOEDOWN_BUF_OK)
+		return err;
 
 	/* reset the references table */
 	memset(&md->refs, 0x0, REF_TABLE_SIZE * sizeof(void *));
@@ -2788,7 +2790,9 @@ hoedown_markdown_render(hoedown_buffer *ob, const uint8_t *document, size_t doc_
 		}
 
 	/* pre-grow the output buffer to minimize allocations */
-	hoedown_buffer_grow(ob, text->size + (text->size >> 1));
+	err = hoedown_buffer_grow(ob, text->size + (text->size >> 1));
+	if (err != HOEDOWN_BUF_OK)
+		return err;
 
 	/* second pass: actual rendering */
 	if (md->md.doc_header)
@@ -2819,6 +2823,8 @@ hoedown_markdown_render(hoedown_buffer *ob, const uint8_t *document, size_t doc_
 
 	assert(md->work_bufs[BUFFER_SPAN].size == 0);
 	assert(md->work_bufs[BUFFER_BLOCK].size == 0);
+
+	return 0;
 }
 
 void

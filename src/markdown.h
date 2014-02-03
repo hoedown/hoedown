@@ -120,7 +120,7 @@ hoedown_markdown_new(
 	size_t max_nesting,
 	const hoedown_renderer *renderer);
 
-extern void
+extern int
 hoedown_markdown_render(hoedown_buffer *ob, const uint8_t *document, size_t doc_size, hoedown_markdown *md);
 
 extern void
