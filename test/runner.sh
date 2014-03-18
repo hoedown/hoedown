@@ -14,9 +14,11 @@ abort() {
     exit 1
 }
 
-test -f "$SCRIPT"   || abort "argument #1 invalid; not a file"
-test -x "$SCRIPT"   || abort "argument #1 invalid; not executable"
-echo "" | "$SCRIPT" || abort "argument #1 invalid; script failed to run"
+EXECUTE="${SCRIPT/ */}"
+
+test -f "$EXECUTE"   || abort "argument #1 invalid; not a file"
+test -x "$EXECUTE"   || abort "argument #1 invalid; not executable"
+echo "" | "$EXECUTE" || abort "argument #1 invalid; script failed to run"
 test -d "$TESTDIR"  || abort "argument #2 invalid; not a directory"
 
 for TEXT in "$TESTDIR"/*.text; do

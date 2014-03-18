@@ -1,0 +1,11 @@
+Name    |  Age  {.table1}
+--------|------
+Fred    |   29
+Jim     |   47
+Harry   |   32
+
+| Name    |  Age | {.table2 #tbl2}
+|---------|-----:|
+| Fred    |   29 |
+| Jim     |   47 |
+| Harry   |   32 |

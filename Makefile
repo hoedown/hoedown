@@ -52,6 +52,9 @@ test-pl: hoedown
 	perl test/MarkdownTest_1.0.3/MarkdownTest.pl \
 		--script=./hoedown --testdir=test/MarkdownTest_1.0.3/Tests --tidy
 
+test-special-attribute: hoedown
+	test/runner.sh "./hoedown --special_attribute --tables --fenced_code" test/MarkdownTest_1.0.3/Tests_Special_Attribute
+
 # Housekeeping
 
 clean:

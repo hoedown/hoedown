@@ -1,0 +1,11 @@
+# Header {.h1}
+
+## Header 2   {#h2}
+
+### Header 3    {.h3 #h3}
+
+header {.header #H2 .H1}
+========================
+
+header 2   {.header .H2 #H2}
+--------

@@ -1,0 +1,11 @@
+* Red {.red}
+* Green {.green}
+* Blue  {.blue}
+
+1. Bird {#bird .list .1}
+2. McHale {#mchale .list .2}
+3. Parish {#parish .list .3}
+
+* Red {#1 .red}
+    * Green {#2 .green}
+        * Blue  {#3 .blue}

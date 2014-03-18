@@ -34,7 +34,10 @@ enum hoedown_extensions {
 	HOEDOWN_EXT_NO_INTRA_EMPHASIS = (1 << 11),
 
 	/* negative flags */
-	HOEDOWN_EXT_DISABLE_INDENTED_CODE = (1 << 12)
+	HOEDOWN_EXT_DISABLE_INDENTED_CODE = (1 << 12),
+
+    /* special attribute */
+    HOEDOWN_EXT_SPECIAL_ATTRIBUTE = (1 << 13)
 };
 
 #define HOEDOWN_EXT_BLOCK (\
@@ -53,7 +56,8 @@ enum hoedown_extensions {
 
 #define HOEDOWN_EXT_FLAGS (\
 	HOEDOWN_EXT_LAX_SPACING |\
-	HOEDOWN_EXT_NO_INTRA_EMPHASIS )
+	HOEDOWN_EXT_NO_INTRA_EMPHASIS |\
+    HOEDOWN_EXT_SPECIAL_ATTRIBUTE)
 
 #define HOEDOWN_EXT_NEGATIVE (\
 	HOEDOWN_EXT_DISABLE_INDENTED_CODE )
@@ -92,12 +96,12 @@ struct hoedown_renderer {
 	void (*blockcode)(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buffer *lang, void *opaque);
 	void (*blockquote)(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque);
 	void (*blockhtml)(hoedown_buffer *ob,const  hoedown_buffer *text, void *opaque);
-	void (*header)(hoedown_buffer *ob, const hoedown_buffer *text, int level, void *opaque);
+	void (*header)(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buffer *attr, int level, void *opaque);
 	void (*hrule)(hoedown_buffer *ob, void *opaque);
 	void (*list)(hoedown_buffer *ob, const hoedown_buffer *text, unsigned int flags, void *opaque);
-	void (*listitem)(hoedown_buffer *ob, const hoedown_buffer *text, unsigned int flags, void *opaque);
+	void (*listitem)(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buffer *attr, unsigned int flags, void *opaque);
 	void (*paragraph)(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque);
-	void (*table)(hoedown_buffer *ob, const hoedown_buffer *header, const hoedown_buffer *body, void *opaque);
+	void (*table)(hoedown_buffer *ob, const hoedown_buffer *header, const hoedown_buffer *body, const hoedown_buffer *attr, void *opaque);
 	void (*table_row)(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque);
 	void (*table_cell)(hoedown_buffer *ob, const hoedown_buffer *text, unsigned int flags, void *opaque);
 	void (*footnotes)(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque);
@@ -111,9 +115,9 @@ struct hoedown_renderer {
 	int (*underline)(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque);
 	int (*highlight)(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque);
 	int (*quote)(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque);
-	int (*image)(hoedown_buffer *ob, const hoedown_buffer *link, const hoedown_buffer *title, const hoedown_buffer *alt, void *opaque);
+	int (*image)(hoedown_buffer *ob, const hoedown_buffer *link, const hoedown_buffer *title, const hoedown_buffer *alt, const hoedown_buffer *attr, void *opaque);
 	int (*linebreak)(hoedown_buffer *ob, void *opaque);
-	int (*link)(hoedown_buffer *ob, const hoedown_buffer *link, const hoedown_buffer *title, const hoedown_buffer *content, void *opaque);
+	int (*link)(hoedown_buffer *ob, const hoedown_buffer *link, const hoedown_buffer *title, const hoedown_buffer *content, const hoedown_buffer *attr, void *opaque);
 	int (*raw_html_tag)(hoedown_buffer *ob, const hoedown_buffer *tag, void *opaque);
 	int (*triple_emphasis)(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque);
 	int (*strikethrough)(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque);
