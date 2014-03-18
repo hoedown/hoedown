@@ -1,0 +1,15 @@
+This is [an example](http://example.com/ "Title"){.example} inline link.
+
+[This link](http://example.net/){#link} has no title attribute.
+
+See my [About](/about/){#about .about} page for details.
+
+This is the [simple case]{.example}
+
+This is the [simple case]{#link}
+
+This is the [simple case]{#about .abount}
+
+This is the [simple case]{:target="_blank"}
+
+[simple case]: /simple
