@@ -36,8 +36,8 @@ enum hoedown_extensions {
 	/* negative flags */
 	HOEDOWN_EXT_DISABLE_INDENTED_CODE = (1 << 12),
 
-    /* special attribute */
-    HOEDOWN_EXT_SPECIAL_ATTRIBUTE = (1 << 13)
+	/* special attribute */
+	HOEDOWN_EXT_SPECIAL_ATTRIBUTE = (1 << 13)
 };
 
 #define HOEDOWN_EXT_BLOCK (\
@@ -57,7 +57,7 @@ enum hoedown_extensions {
 #define HOEDOWN_EXT_FLAGS (\
 	HOEDOWN_EXT_LAX_SPACING |\
 	HOEDOWN_EXT_NO_INTRA_EMPHASIS |\
-    HOEDOWN_EXT_SPECIAL_ATTRIBUTE)
+	HOEDOWN_EXT_SPECIAL_ATTRIBUTE)
 
 #define HOEDOWN_EXT_NEGATIVE (\
 	HOEDOWN_EXT_DISABLE_INDENTED_CODE )

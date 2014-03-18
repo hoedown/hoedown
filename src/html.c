@@ -58,73 +58,73 @@ static inline void escape_href(hoedown_buffer *ob, const uint8_t *source, size_t
 static int
 rndr_attributes(struct hoedown_buffer *ob, const uint8_t *buf, const size_t size, int *flags, void *opaque)
 {
-    size_t n, i = 1;
-    int id = 0, type = 0;
+	size_t n, i = 1;
+	int id = 0, type = 0;
 
-    hoedown_buffer *class = 0;
+	hoedown_buffer *class = 0;
 
-    while (i < size) {
-        if (buf[i-1] == '#') {
-            type = 1;
-        } else if (buf[i-1] == '.') {
-            type = 2;
-        } else if (buf[i-1] == ':') {
-            type = 3;
-        } else {
-            ++i;
-            continue;
-        }
+	while (i < size) {
+		if (buf[i-1] == '#') {
+			type = 1;
+		} else if (buf[i-1] == '.') {
+			type = 2;
+		} else if (buf[i-1] == ':') {
+			type = 3;
+		} else {
+			++i;
+			continue;
+		}
 
-        n = i;
+		n = i;
 
-        while (i < size &&
-               buf[i] != '#' && buf[i] != '.' && buf[i] != ':' &&
-               buf[i] != ' ') {
-            ++i;
-        }
+		while (i < size &&
+			   buf[i] != '#' && buf[i] != '.' && buf[i] != ':' &&
+			   buf[i] != ' ') {
+			++i;
+		}
 
-        switch (type) {
-            case 1:
-                /* id */
-                if (!id) {
-                    HOEDOWN_BUFPUTSL(ob, " id=\"");
-                    escape_html(ob, &buf[n], i - n);
-                    hoedown_buffer_putc(ob, '"');
-                    id = 1;
-                }
-                break;
-            case 2:
-                /* class */
-                if (!class) {
-                    class = hoedown_buffer_new(64);
-                    if (class) {
-                        hoedown_buffer_grow(class, size);
-                    }
-                }
-                escape_html(class, &buf[n], i - n);
-                hoedown_buffer_putc(class, ' ');
-                break;
-            case 3:
-                /* attribute */
-                hoedown_buffer_putc(ob, ' ');
-                hoedown_buffer_put(ob, &buf[n], i - n);
-                break;
-        }
-    }
+		switch (type) {
+			case 1:
+				/* id */
+				if (!id) {
+					HOEDOWN_BUFPUTSL(ob, " id=\"");
+					escape_html(ob, &buf[n], i - n);
+					hoedown_buffer_putc(ob, '"');
+					id = 1;
+				}
+				break;
+			case 2:
+				/* class */
+				if (!class) {
+					class = hoedown_buffer_new(64);
+					if (class) {
+						hoedown_buffer_grow(class, size);
+					}
+				}
+				escape_html(class, &buf[n], i - n);
+				hoedown_buffer_putc(class, ' ');
+				break;
+			case 3:
+				/* attribute */
+				hoedown_buffer_putc(ob, ' ');
+				hoedown_buffer_put(ob, &buf[n], i - n);
+				break;
+		}
+	}
 
-    if (class) {
-        if (class->size > 0) {
-            if (flags) {
-                *flags = 1;
-            }
-            HOEDOWN_BUFPUTSL(ob, " class=\"");
-            hoedown_buffer_put(ob, class->data, class->size-1);
-            hoedown_buffer_putc(ob, '"');
-        }
-        hoedown_buffer_free(class);
-    }
+	if (class) {
+		if (class->size > 0) {
+			if (flags) {
+				*flags = 1;
+			}
+			HOEDOWN_BUFPUTSL(ob, " class=\"");
+			hoedown_buffer_put(ob, class->data, class->size-1);
+			hoedown_buffer_putc(ob, '"');
+		}
+		hoedown_buffer_free(class);
+	}
 
-    return 1;
+	return 1;
 }
 
 static int
@@ -175,15 +175,15 @@ rndr_blockcode(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buf
 	if (ob->size) hoedown_buffer_putc(ob, '\n');
 
 	if (lang) {
-        int class = 0;
-        HOEDOWN_BUFPUTSL(ob, "<pre><code");
-        rndr_attributes(ob, lang->data, lang->size, &class, opaque);
-        if (!class) {
-            HOEDOWN_BUFPUTSL(ob, " class=\"language-");
-            escape_html(ob, lang->data, lang->size);
-            hoedown_buffer_putc(ob, '"');
-        }
-        hoedown_buffer_putc(ob, '>');
+		int class = 0;
+		HOEDOWN_BUFPUTSL(ob, "<pre><code");
+		rndr_attributes(ob, lang->data, lang->size, &class, opaque);
+		if (!class) {
+			HOEDOWN_BUFPUTSL(ob, " class=\"language-");
+			escape_html(ob, lang->data, lang->size);
+			hoedown_buffer_putc(ob, '"');
+		}
+		hoedown_buffer_putc(ob, '>');
 	} else {
 		HOEDOWN_BUFPUTSL(ob, "<pre><code>");
 	}
@@ -302,15 +302,15 @@ rndr_header(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buffer
 	if (ob->size)
 		hoedown_buffer_putc(ob, '\n');
 
-    if (attr && attr->size) {
-        hoedown_buffer_printf(ob, "<h%d", level);
-        rndr_attributes(ob, attr->data, attr->size, NULL, opaque);
-        hoedown_buffer_putc(ob, '>');
-    } else if ((state->flags & HOEDOWN_HTML_TOC) && (level <= state->toc_data.nesting_level)) {
-        hoedown_buffer_printf(ob, "<h%d id=\"toc_%d\">", level, state->toc_data.header_count++);
-    } else {
-        hoedown_buffer_printf(ob, "<h%d>", level);
-    }
+	if (attr && attr->size) {
+		hoedown_buffer_printf(ob, "<h%d", level);
+		rndr_attributes(ob, attr->data, attr->size, NULL, opaque);
+		hoedown_buffer_putc(ob, '>');
+	} else if ((state->flags & HOEDOWN_HTML_TOC) && (level <= state->toc_data.nesting_level)) {
+		hoedown_buffer_printf(ob, "<h%d id=\"toc_%d\">", level, state->toc_data.header_count++);
+	} else {
+		hoedown_buffer_printf(ob, "<h%d>", level);
+	}
 
 	if (text) hoedown_buffer_put(ob, text->data, text->size);
 	hoedown_buffer_printf(ob, "</h%d>\n", level);
@@ -338,10 +338,10 @@ rndr_link(hoedown_buffer *ob, const hoedown_buffer *link, const hoedown_buffer *
 		hoedown_buffer_putc(ob, '\"');
 		state->link_attributes(ob, link, opaque);
 		hoedown_buffer_putc(ob, '>');
-    } else if (attr && attr->size) {
-        hoedown_buffer_putc(ob, '"');
-        rndr_attributes(ob, attr->data, attr->size, NULL, opaque);
-        hoedown_buffer_putc(ob, '>');
+	} else if (attr && attr->size) {
+		hoedown_buffer_putc(ob, '"');
+		rndr_attributes(ob, attr->data, attr->size, NULL, opaque);
+		hoedown_buffer_putc(ob, '>');
 	} else {
 		HOEDOWN_BUFPUTSL(ob, "\">");
 	}
@@ -363,21 +363,21 @@ rndr_list(hoedown_buffer *ob, const hoedown_buffer *text, unsigned int flags, vo
 static void
 rndr_listitem(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buffer *attr, unsigned int flags, void *opaque)
 {
-    if (text) {
-        size_t prefix = 0;
-        size_t size = text->size;
-        while (size && text->data[size - 1] == '\n')
-            size--;
+	if (text) {
+		size_t prefix = 0;
+		size_t size = text->size;
+		while (size && text->data[size - 1] == '\n')
+			size--;
 
-        HOEDOWN_BUFPUTSL(ob, "<li");
-        if (attr && attr->size) {
-            rndr_attributes(ob, attr->data, attr->size, NULL, opaque);
-        }
-        hoedown_buffer_putc(ob, '>');
-        hoedown_buffer_put(ob, text->data+prefix, size);
-    } else {
-        HOEDOWN_BUFPUTSL(ob, "<li>");
-    }
+		HOEDOWN_BUFPUTSL(ob, "<li");
+		if (attr && attr->size) {
+			rndr_attributes(ob, attr->data, attr->size, NULL, opaque);
+		}
+		hoedown_buffer_putc(ob, '>');
+		hoedown_buffer_put(ob, text->data+prefix, size);
+	} else {
+		HOEDOWN_BUFPUTSL(ob, "<li>");
+	}
 	HOEDOWN_BUFPUTSL(ob, "</li>\n");
 }
 
@@ -474,10 +474,10 @@ rndr_image(hoedown_buffer *ob, const hoedown_buffer *link, const hoedown_buffer 
 		HOEDOWN_BUFPUTSL(ob, "\" title=\"");
 		escape_html(ob, title->data, title->size); }
 
-    hoedown_buffer_putc(ob, '"');
-    if (attr && attr->size) {
-        rndr_attributes(ob, attr->data, attr->size, NULL, opaque);
-    }
+	hoedown_buffer_putc(ob, '"');
+	if (attr && attr->size) {
+		rndr_attributes(ob, attr->data, attr->size, NULL, opaque);
+	}
 
 	hoedown_buffer_puts(ob, USE_XHTML(state) ? "/>" : ">");
 	return 1;
@@ -518,10 +518,10 @@ static void
 rndr_table(hoedown_buffer *ob, const hoedown_buffer *header, const hoedown_buffer *body, const hoedown_buffer *attr, void *opaque)
 {
 	if (ob->size) hoedown_buffer_putc(ob, '\n');
-    HOEDOWN_BUFPUTSL(ob, "<table");
-    if (attr)
-        rndr_attributes(ob, attr->data, attr->size, NULL, opaque);
-    HOEDOWN_BUFPUTSL(ob, "><thead>\n");
+	HOEDOWN_BUFPUTSL(ob, "<table");
+	if (attr)
+		rndr_attributes(ob, attr->data, attr->size, NULL, opaque);
+	HOEDOWN_BUFPUTSL(ob, "><thead>\n");
 	if (header)
 		hoedown_buffer_put(ob, header->data, header->size);
 	HOEDOWN_BUFPUTSL(ob, "</thead><tbody>\n");
@@ -674,24 +674,24 @@ toc_header(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buffer 
 			HOEDOWN_BUFPUTSL(ob,"</li>\n<li>\n");
 		}
 
-        if (attr && attr->size) {
-            size_t n, i = 0;
-            do {
-                i++;
-            } while (i < attr->size && attr->data[i-1] != '#');
-            if (i < attr->size) {
-                n = i;
-                while (n < attr->size && attr->data[n] != '#' &&
-                       attr->data[n] != '.' && attr->data[n] != ' ') {
-                    n++;
-                }
-                HOEDOWN_BUFPUTSL(ob, "<a href=\"#");
-                escape_html(ob, attr->data + i, n - i);
-                HOEDOWN_BUFPUTSL(ob, "\">");
-            }
-        } else {
-            hoedown_buffer_printf(ob, "<a href=\"#toc_%d\">", state->toc_data.header_count++);
-        }
+		if (attr && attr->size) {
+			size_t n, i = 0;
+			do {
+				i++;
+			} while (i < attr->size && attr->data[i-1] != '#');
+			if (i < attr->size) {
+				n = i;
+				while (n < attr->size && attr->data[n] != '#' &&
+					   attr->data[n] != '.' && attr->data[n] != ' ') {
+					n++;
+				}
+				HOEDOWN_BUFPUTSL(ob, "<a href=\"#");
+				escape_html(ob, attr->data + i, n - i);
+				HOEDOWN_BUFPUTSL(ob, "\">");
+			}
+		} else {
+			hoedown_buffer_printf(ob, "<a href=\"#toc_%d\">", state->toc_data.header_count++);
+		}
 
 		if (text) escape_html(ob, text->data, text->size);
 		HOEDOWN_BUFPUTSL(ob, "</a>\n");
