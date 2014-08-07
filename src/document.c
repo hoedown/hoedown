@@ -123,6 +123,9 @@ struct hoedown_document {
 	unsigned int ext_flags;
 	size_t max_nesting;
 	int in_link_body;
+
+    void *data;
+    size_t (*parse_custom)(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size);
 };
 
 /***************************
@@ -2405,6 +2408,10 @@ parse_block(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t siz
 		else if (prefix_oli(txt_data, end))
 			beg += parse_list(ob, doc, txt_data, end, HOEDOWN_LIST_ORDERED);
 
+        else if (doc->parse_custom &&
+            (i = doc->parse_custom(ob, doc, txt_data, end)) != 0)
+            beg += i;
+
 		else
 			beg += parse_paragraph(ob, doc, txt_data, end);
 	}
@@ -2725,6 +2732,35 @@ hoedown_document_new(
 	doc->in_link_body = 0;
 
 	return doc;
+}
+
+void hoedown_document_set_parse_custom(
+    hoedown_document *doc,
+    size_t (*func)(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size))
+{
+    doc->parse_custom = func;
+}
+
+hoedown_renderer *hoedown_document_get_renderer(hoedown_document *doc)
+{
+    return &doc->md;
+}
+
+void *hoedown_document_get_data(hoedown_document *doc)
+{
+    return doc->data;
+}
+
+void
+hoedown_document_set_special_char(hoedown_document *doc, uint8_t c, int flag)
+{
+    doc->active_char[c] = flag;
+}
+
+void
+hoedown_document_remove_special_char(hoedown_document *doc, uint8_t c)
+{
+    doc->active_char[c] = MD_CHAR_NONE;
 }
 
 void
