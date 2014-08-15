@@ -537,7 +537,7 @@ static int
 rndr_math(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buffer *open_tag, const hoedown_buffer *close_tag, void *opaque)
 {
 	hoedown_buffer_put(ob, open_tag->data, open_tag->size);
-	hoedown_buffer_put(ob, text->data, text->size);
+	escape_html(ob, text->data, text->size);
 	hoedown_buffer_put(ob, close_tag->data, close_tag->size);
 	return 1;
 }
