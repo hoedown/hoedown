@@ -1340,24 +1340,35 @@ char_math(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offse
 	delimsz = is_math_delim(data, doc->ext_flags & HOEDOWN_EXT_MATH_DOLLAR, size, &beg);
 	if (!delimsz) return 0;
 
-	/* content */
-	len = find_emph_char(data + delimsz, size - delimsz, beg[0]);
-	if (!len) return 0;
-
-	/* close tag */
+	/* get expected close tag */
 	for (i = 0; i < 4; i++) {
 		if (memcmp(beg, delim_map[i][0], delimsz) == 0) {
 			end = (uint8_t *)delim_map[i][1];
 			break;
 		}
 	}
-	if (!end) return 0;
+	if (end == NULL) return 0;
 
-	total = len + 2 * delimsz;
-	if (total + 1 < size && !_isspace(data[total + 1]))
+	for (len = delimsz; len < size; len++) {
+		if (data[len] != end[0]) continue;
+
+		/* ignore escaped */
+		if (is_escaped(data, len)) {
+			len++;
+			continue;
+		}
+
+		/* match end tag */
+		if (len + delimsz <= size && memcmp(data + len, end, delimsz) == 0)
+			break;
+	}
+
+	total = len + delimsz;
+	if (total > size || (total + 1 < size && !_isspace(data[total + 1])))
 		return 0;
 
 	data += delimsz;
+	len -= delimsz;
 	if (beg[0] == '\\') {
 		beg += 1;
 		end += 1;
