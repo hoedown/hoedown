@@ -693,6 +693,7 @@ static size_t
 parse_math(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offset, size_t size, const char *end, size_t delimsz)
 {
 	size_t i = delimsz;
+	if (!doc->md.math) return 0;
 
 	/* find ending delimiter */
 	while (1) {
@@ -723,7 +724,7 @@ parse_math(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offs
 	}
 
 	/* call callback */
-	if (doc->md.math && doc->md.math(ob, &text, &open_tag, &close_tag, doc->md.opaque))
+	if (doc->md.math(ob, &text, &open_tag, &close_tag, doc->md.opaque))
 		return i + delimsz;
 	return 0;
 }
@@ -880,7 +881,7 @@ char_escape(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t off
 
 	if (size > 1) {
 		if (data[1] == '\\' && (doc->ext_flags & HOEDOWN_EXT_MATH) &&
-			size > 2 && (data[2] == '(' || data[2 == '['])) {
+			size > 2 && (data[2] == '(' || data[2] == '[')) {
 			const char *end = (data[2] == '(') ? "\\\\)" : "\\\\]";
 			return parse_math(ob, doc, data, offset, size, end, 3);
 		}
@@ -1341,8 +1342,6 @@ char_superscript(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_
 static size_t
 char_math(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offset, size_t size)
 {
-	if (!(doc->ext_flags & HOEDOWN_EXT_MATH)) return 0;
-
 	/* double dollar */
 	if (size > 1 && data[1] == '$')
 		return parse_math(ob, doc, data, offset, size, "$$", 2);
