@@ -862,7 +862,7 @@ char_escape(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t off
 	size_t i = 0;
 
 	if (size > 1) {
-		if ((doc->ext_flags & HOEDOWN_EXT_MATH) != 0 && data[0] == '\\' &&
+		if ((doc->ext_flags & HOEDOWN_EXT_MATH) != 0 && data[1] == '\\' &&
 			(i = char_math(ob, doc, data, offset, size)) != 0)
 			return i;
 		if (strchr(escape_chars, data[1]) == NULL)
