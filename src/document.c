@@ -1336,6 +1336,7 @@ char_math(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offse
 	if (!doc->md.math) return 0;
 
 	/* open tag */
+	if (offset && !_isspace(*(data - 1))) return 0;
 	delimsz = is_math_delim(data, doc->ext_flags & HOEDOWN_EXT_MATH_DOLLAR, size, &beg);
 	if (!delimsz) return 0;
 
@@ -1353,6 +1354,9 @@ char_math(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offse
 	if (!end) return 0;
 
 	total = len + 2 * delimsz;
+	if (total + 1 < size && !_isspace(data[total + 1]))
+		return 0;
+
 	data += delimsz;
 	if (beg[0] == '\\') {
 		beg += 1;
