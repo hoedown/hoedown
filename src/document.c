@@ -1364,7 +1364,7 @@ char_math(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offse
 	}
 
 	total = len + delimsz;
-	if (total > size || (total + 1 < size && !_isspace(data[total + 1])))
+	if (total > size || (total < size && !_isspace(data[total])))
 		return 0;
 
 	data += delimsz;
