@@ -64,10 +64,12 @@ static struct extension_info extensions_info[] = {
 	{HOEDOWN_EXT_HIGHLIGHT, "highlight", "Parse ==highlight== spans."},
 	{HOEDOWN_EXT_QUOTE, "quote", "Render \"quotes\" as <q>quotes</q>."},
 	{HOEDOWN_EXT_SUPERSCRIPT, "superscript", "Parse super^script."},
+	{HOEDOWN_EXT_MATH, "math", "Parse TeX-style math syntax."},
 
 	{HOEDOWN_EXT_LAX_SPACING, "lax-spacing", "Allow HTML blocks on the same line as text."},
 	{HOEDOWN_EXT_NO_INTRA_EMPHASIS, "disable-intra-emphasis", "Disable emphasis_between_words."},
 	{HOEDOWN_EXT_SPACE_HEADERS, "space-headers", "Require a space after '#' in headers."},
+	{HOEDOWN_EXT_MATH_DOLLAR, "math-dollar", "Parse $inline math$ block (requires --math)."},
 
 	{HOEDOWN_EXT_DISABLE_INDENTED_CODE, "disable-indented-code", "Don't parse indented code blocks."},
 };
