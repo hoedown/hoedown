@@ -878,12 +878,14 @@ char_escape(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t off
 {
 	static const char *escape_chars = "\\`*_{}[]()#+-.!:|&<>^~=\"$";
 	hoedown_buffer work = { 0, 0, 0, 0, NULL, NULL, NULL };
+	size_t w;
 
 	if (size > 1) {
 		if (data[1] == '\\' && (doc->ext_flags & HOEDOWN_EXT_MATH) &&
 			size > 2 && (data[2] == '(' || data[2] == '[')) {
 			const char *end = (data[2] == '(') ? "\\\\)" : "\\\\]";
-			return parse_math(ob, doc, data, offset, size, end, 3);
+			w = parse_math(ob, doc, data, offset, size, end, 3);
+			if (w) return w;
 		}
 
 		if (strchr(escape_chars, data[1]) == NULL)
