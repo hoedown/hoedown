@@ -27,11 +27,13 @@ enum hoedown_extensions {
 	HOEDOWN_EXT_HIGHLIGHT = (1 << 6),
 	HOEDOWN_EXT_QUOTE = (1 << 7),
 	HOEDOWN_EXT_SUPERSCRIPT = (1 << 8),
+	HOEDOWN_EXT_MATH = (1 << 13),
 
 	/* other flags */
 	HOEDOWN_EXT_LAX_SPACING = (1 << 9),
 	HOEDOWN_EXT_NO_INTRA_EMPHASIS = (1 << 10),
 	HOEDOWN_EXT_SPACE_HEADERS = (1 << 11),
+	HOEDOWN_EXT_MATH_DOLLAR = (1 << 14),
 
 	/* negative flags */
 	HOEDOWN_EXT_DISABLE_INDENTED_CODE = (1 << 12)
@@ -48,12 +50,14 @@ enum hoedown_extensions {
 	HOEDOWN_EXT_UNDERLINE |\
 	HOEDOWN_EXT_HIGHLIGHT |\
 	HOEDOWN_EXT_QUOTE |\
-	HOEDOWN_EXT_SUPERSCRIPT )
+	HOEDOWN_EXT_SUPERSCRIPT |\
+	HOEDOWN_EXT_MATH )
 
 #define HOEDOWN_EXT_FLAGS (\
 	HOEDOWN_EXT_LAX_SPACING |\
 	HOEDOWN_EXT_NO_INTRA_EMPHASIS |\
-	HOEDOWN_EXT_SPACE_HEADERS )
+	HOEDOWN_EXT_SPACE_HEADERS |\
+	HOEDOWN_EXT_MATH_DOLLAR )
 
 #define HOEDOWN_EXT_NEGATIVE (\
 	HOEDOWN_EXT_DISABLE_INDENTED_CODE )
@@ -119,6 +123,7 @@ struct hoedown_renderer {
 	int (*strikethrough)(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque);
 	int (*superscript)(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque);
 	int (*footnote_ref)(hoedown_buffer *ob, unsigned int num, void *opaque);
+	int (*math)(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buffer *open_tag, const hoedown_buffer *close_tag, void *opaque);
 
 	/* low level callbacks - NULL copies input directly into the output */
 	void (*entity)(hoedown_buffer *ob, const hoedown_buffer *entity, void *opaque);
