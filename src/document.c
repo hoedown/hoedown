@@ -78,6 +78,7 @@ static size_t char_autolink_email(hoedown_buffer *ob, hoedown_document *doc, uin
 static size_t char_autolink_www(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offset, size_t size);
 static size_t char_link(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offset, size_t size);
 static size_t char_superscript(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offset, size_t size);
+static size_t char_math(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offset, size_t size);
 
 enum markdown_char_t {
 	MD_CHAR_NONE = 0,
@@ -92,7 +93,8 @@ enum markdown_char_t {
 	MD_CHAR_AUTOLINK_EMAIL,
 	MD_CHAR_AUTOLINK_WWW,
 	MD_CHAR_SUPERSCRIPT,
-	MD_CHAR_QUOTE
+	MD_CHAR_QUOTE,
+	MD_CHAR_MATH
 };
 
 static char_trigger markdown_char_ptrs[] = {
@@ -108,7 +110,8 @@ static char_trigger markdown_char_ptrs[] = {
 	&char_autolink_email,
 	&char_autolink_www,
 	&char_superscript,
-	&char_quote
+	&char_quote,
+	&char_math
 };
 
 /* render • structure containing state for a parser instance */
@@ -383,6 +386,28 @@ is_mail_autolink(uint8_t *data, size_t size)
 		}
 	}
 
+	return 0;
+}
+
+/* check if data starts with a math delimiter; return its length, or 0 if
+ * there is not one. if passed, the delimiter's content will be returned */
+static size_t
+is_math_delim(uint8_t *data, int dollar, size_t size, const uint8_t **chrs)
+{
+	static const char *delims[] = { "\\\\(", "\\\\[", "$$" };
+	size_t i;
+	for (i = 0; i < 3; i++) {
+		const char *delim = delims[i];
+		size_t delimsz = strlen(delim);
+		if (size >= delimsz && memcmp(data, delim, delimsz) == 0) {
+			if (chrs) *chrs = (const uint8_t *)delim;
+			return delimsz;
+		}
+	}
+	if (dollar && size && data[0] == '$') {
+		if (chrs) *chrs = (const uint8_t *)"$";
+		return 1;
+	}
 	return 0;
 }
 
@@ -854,12 +879,17 @@ char_quote(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offs
 static size_t
 char_escape(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offset, size_t size)
 {
-	static const char *escape_chars = "\\`*_{}[]()#+-.!:|&<>^~=\"";
+	static const char *escape_chars = "\\`*_{}[]()#+-.!:|&<>^~=\"$";
 	hoedown_buffer work = { 0, 0, 0, 0, NULL, NULL, NULL };
+	size_t i = 0;
 
 	if (size > 1) {
+		if ((doc->ext_flags & HOEDOWN_EXT_MATH) != 0 && data[1] == '\\' &&
+			(i = char_math(ob, doc, data, offset, size)) != 0)
+			return i;
 		if (strchr(escape_chars, data[1]) == NULL)
 			return 0;
+
 
 		if (doc->md.normal_text) {
 			work.data = data + 1;
@@ -1259,6 +1289,76 @@ char_superscript(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_
 	popbuf(doc, BUFFER_SPAN);
 
 	return (sup_start == 2) ? sup_len + 1 : sup_len;
+}
+
+static size_t
+char_math(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offset, size_t size)
+{
+	static const char *delim_map[][2] = {
+		{"\\\\[", "\\\\]"},
+		{"\\\\(", "\\\\)"},
+		{"$$", "$$"},
+		{"$", "$"}
+	};
+	int r;
+	const uint8_t *beg, *end = NULL;
+	size_t delimsz, len, i, total;
+	hoedown_buffer *beg_b, *end_b, *con_b;
+
+	if (!doc->md.math) return 0;
+
+	/* open tag */
+	if (offset && !_isspace(*(data - 1))) return 0;
+	delimsz = is_math_delim(data, doc->ext_flags & HOEDOWN_EXT_MATH_DOLLAR, size, &beg);
+	if (!delimsz) return 0;
+
+	/* get expected close tag */
+	for (i = 0; i < 4; i++) {
+		if (memcmp(beg, delim_map[i][0], delimsz) == 0) {
+			end = (uint8_t *)delim_map[i][1];
+			break;
+		}
+	}
+	if (end == NULL) return 0;
+
+	for (len = delimsz; len < size; len++) {
+		if (data[len] != end[0]) continue;
+
+		/* ignore escaped */
+		if (is_escaped(data, len)) {
+			len++;
+			continue;
+		}
+
+		/* match end tag */
+		if (len + delimsz <= size && memcmp(data + len, end, delimsz) == 0)
+			break;
+	}
+
+	total = len + delimsz;
+	if (total > size || (total < size && !_isspace(data[total])))
+		return 0;
+
+	data += delimsz;
+	len -= delimsz;
+	if (beg[0] == '\\') {
+		beg += 1;
+		end += 1;
+		delimsz -= 1;
+	}
+
+	con_b = newbuf(doc, BUFFER_SPAN);
+	beg_b = newbuf(doc, BUFFER_SPAN);
+	end_b = newbuf(doc, BUFFER_SPAN);
+	hoedown_buffer_put(con_b, data, len);
+	hoedown_buffer_put(beg_b, beg, delimsz);
+	hoedown_buffer_put(end_b, end, delimsz);
+	r = doc->md.math(ob, con_b, beg_b, end_b, doc->md.opaque);
+	popbuf(doc, BUFFER_SPAN);
+	popbuf(doc, BUFFER_SPAN);
+	popbuf(doc, BUFFER_SPAN);
+
+	return r ? total : 0;
 }
 
 /*********************************
@@ -2713,6 +2813,9 @@ hoedown_document_new(
 
 	if (extensions & HOEDOWN_EXT_QUOTE)
 		doc->active_char['"'] = MD_CHAR_QUOTE;
+
+	if (extensions & HOEDOWN_EXT_MATH)
+		doc->active_char['$'] = MD_CHAR_MATH;
 
 	/* Extension data */
 	doc->ext_flags = extensions;
