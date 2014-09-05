@@ -1260,12 +1260,12 @@ char_link(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offse
 		/* building escaped link and title */
 		if (link_e > link_b) {
 			link = newbuf(doc, BUFFER_SPAN);
-			hoedown_buffer_put(link, data + link_b, link_e - link_b);
+			custom_buffer_put(doc, link, data + link_b, link_e - link_b);
 		}
 
 		if (title_e > title_b) {
 			title = newbuf(doc, BUFFER_SPAN);
-			hoedown_buffer_put(title, data + title_b, title_e - title_b);
+			custom_buffer_put(doc, title, data + title_b, title_e - title_b);
 		}
 
 		i++;
@@ -1324,7 +1324,7 @@ char_link(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offse
 	if (txt_e > 1) {
 		content = newbuf(doc, BUFFER_SPAN);
 		if (is_img) {
-			hoedown_buffer_put(content, data + 1, txt_e - 1);
+			custom_buffer_put(doc, content, data + 1, txt_e - 1);
 		} else {
 			/* disable autolinking when parsing inline the
 			 * content of a link */
@@ -1677,7 +1677,7 @@ parse_blockquote(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_
 			break;
 
 		if (beg < end) { /* copy into the in-place working buffer */
-			hoedown_buffer_put(work, data + beg, end - beg);
+			custom_buffer_put(doc, work, data + beg, end - beg);
 		}
 		beg = end;
 	}
@@ -1864,7 +1864,7 @@ parse_blockcode(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t
 				escaping entities */
 			if (is_empty(data + beg, end - beg))
 				hoedown_buffer_putc(work, '\n');
-			else hoedown_buffer_put(work, data + beg, end - beg);
+			else custom_buffer_put(doc, work, data + beg, end - beg);
 		}
 		beg = end;
 	}
@@ -1911,7 +1911,7 @@ parse_listitem(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t 
 	inter = newbuf(doc, BUFFER_SPAN);
 
 	/* putting the first line into the working buffer */
-	hoedown_buffer_put(work, data + beg, end - beg);
+	custom_buffer_put(doc, work, data + beg, end - beg);
 	beg = end;
 
 	/* process the following lines */
@@ -1983,7 +1983,7 @@ parse_listitem(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t 
 		}
 
 		/* adding the line without prefix into the working buffer */
-		hoedown_buffer_put(work, data + beg + i, end - beg - i);
+		custom_buffer_put(doc, work, data + beg + i, end - beg - i);
 		beg = end;
 	}
 
