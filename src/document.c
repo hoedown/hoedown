@@ -114,6 +114,17 @@ static char_trigger markdown_char_ptrs[] = {
 	&char_math
 };
 
+/* maps a chunk of data to the position where it
+ * appears in the preprocessed Markdown source */
+struct mapped_chunk {
+	const hoedown_buffer *buffer; /* buffer where the chunk lives */
+	size_t offset;                /* position of the chunk in the buffer */
+	size_t size;                  /* size of the chunk */
+
+	size_t position;              /* position of the chunk in source */
+};
+typedef struct mapped_chunk mapped_chunk;
+
 /* render • structure containing state for a parser instance */
 struct hoedown_document {
 	hoedown_renderer md;
@@ -123,6 +134,7 @@ struct hoedown_document {
 	struct footnote_list footnotes_used;
 	uint8_t active_char[256];
 	hoedown_stack work_bufs[2];
+	hoedown_stack chunks;
 	unsigned int ext_flags;
 	size_t max_nesting;
 	int in_link_body;
@@ -131,6 +143,58 @@ struct hoedown_document {
 /***************************
  * HELPER FUNCTIONS *
  ***************************/
+
+static inline void
+map_chunk(hoedown_document *doc, const hoedown_buffer *buffer, size_t offset, size_t size, size_t position)
+{
+	hoedown_stack *chunks = &doc->chunks;
+	mapped_chunk *chunk;
+
+	if (chunks->size < chunks->asize && chunks->item[chunks->size]) {
+		chunk = chunks->item[chunks->size++];
+	} else {
+		chunk = malloc(sizeof(mapped_chunk));
+		hoedown_stack_push(chunks, chunk);
+	}
+
+	chunk->buffer = buffer;
+	chunk->offset = offset;
+	chunk->size = size;
+	chunk->position = position;
+}
+
+size_t
+hoedown_document_locate(hoedown_document *doc, const uint8_t *character, size_t *position)
+{
+	hoedown_stack *chunks = &doc->chunks;
+	size_t i;
+	for (i = chunks->size; (i--) > 0;) {
+		mapped_chunk *chunk = chunks->item[i];
+		const uint8_t *chunk_data = chunk->buffer->data + chunk->offset;
+		if (character >= chunk_data && character < chunk_data + chunk->size) {
+			size_t character_offset = character - chunk_data;
+			*position = chunk->position + character_offset;
+			return chunk->size - character_offset;
+		}
+	}
+
+	return 0;
+}
+
+static inline void
+custom_buffer_put(hoedown_document *doc, hoedown_buffer *buffer, const uint8_t *data, size_t size) {
+	size_t offset = 0, position, chunk_size;
+	while (offset < size) {
+		chunk_size = hoedown_document_locate(doc, data + offset, &position);
+		if (chunk_size > 0) {
+			if (offset + chunk_size > size) chunk_size = size - offset;
+			map_chunk(doc, buffer, buffer->size + offset, chunk_size, position);
+			offset += chunk_size;
+		} else offset++;
+	}
+
+	hoedown_buffer_put(buffer, data, size);
+}
 
 static inline hoedown_buffer *
 newbuf(hoedown_document *doc, int type)
@@ -154,7 +218,16 @@ newbuf(hoedown_document *doc, int type)
 static inline void
 popbuf(hoedown_document *doc, int type)
 {
-	doc->work_bufs[type].size--;
+	hoedown_stack *pool = &doc->work_bufs[type];
+	pool->size--;
+	hoedown_buffer *buffer = pool->item[pool->size];
+
+	hoedown_stack *chunks = &doc->chunks;
+	size_t i;
+	for (i = chunks->size; (i--) > 0;) {
+		mapped_chunk *chunk = chunks->item[i];
+		if (chunk->buffer == buffer) chunks->size = i;
+	}
 }
 
 static void
@@ -1187,12 +1260,12 @@ char_link(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offse
 		/* building escaped link and title */
 		if (link_e > link_b) {
 			link = newbuf(doc, BUFFER_SPAN);
-			hoedown_buffer_put(link, data + link_b, link_e - link_b);
+			custom_buffer_put(doc, link, data + link_b, link_e - link_b);
 		}
 
 		if (title_e > title_b) {
 			title = newbuf(doc, BUFFER_SPAN);
-			hoedown_buffer_put(title, data + title_b, title_e - title_b);
+			custom_buffer_put(doc, title, data + title_b, title_e - title_b);
 		}
 
 		i++;
@@ -1251,7 +1324,7 @@ char_link(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offse
 	if (txt_e > 1) {
 		content = newbuf(doc, BUFFER_SPAN);
 		if (is_img) {
-			hoedown_buffer_put(content, data + 1, txt_e - 1);
+			custom_buffer_put(doc, content, data + 1, txt_e - 1);
 		} else {
 			/* disable autolinking when parsing inline the
 			 * content of a link */
@@ -1278,7 +1351,7 @@ char_link(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offse
 
 	/* cleanup */
 cleanup:
-	doc->work_bufs[BUFFER_SPAN].size = (int)org_work_size;
+	while (doc->work_bufs[BUFFER_SPAN].size > org_work_size) popbuf(doc, BUFFER_SPAN);
 	return ret ? i : 0;
 }
 
@@ -1583,10 +1656,10 @@ static void parse_block(hoedown_buffer *ob, hoedown_document *doc,
 static size_t
 parse_blockquote(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size)
 {
-	size_t beg, end = 0, pre, work_size = 0;
-	uint8_t *work_data = 0;
-	hoedown_buffer *out = 0;
+	size_t beg, end = 0, pre;
+	hoedown_buffer *out = 0, *work = 0;
 
+	work = newbuf(doc, BUFFER_BLOCK);
 	out = newbuf(doc, BUFFER_BLOCK);
 	beg = 0;
 	while (beg < size) {
@@ -1604,19 +1677,15 @@ parse_blockquote(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_
 			break;
 
 		if (beg < end) { /* copy into the in-place working buffer */
-			/* hoedown_buffer_put(work, data + beg, end - beg); */
-			if (!work_data)
-				work_data = data + beg;
-			else if (data + beg != work_data + work_size)
-				memmove(work_data + work_size, data + beg, end - beg);
-			work_size += end - beg;
+			custom_buffer_put(doc, work, data + beg, end - beg);
 		}
 		beg = end;
 	}
 
-	parse_block(out, doc, work_data, work_size);
+	parse_block(out, doc, work->data, work->size);
 	if (doc->md.blockquote)
 		doc->md.blockquote(ob, out, doc->md.opaque);
+	popbuf(doc, BUFFER_BLOCK);
 	popbuf(doc, BUFFER_BLOCK);
 	return end;
 }
@@ -1795,7 +1864,7 @@ parse_blockcode(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t
 				escaping entities */
 			if (is_empty(data + beg, end - beg))
 				hoedown_buffer_putc(work, '\n');
-			else hoedown_buffer_put(work, data + beg, end - beg);
+			else custom_buffer_put(doc, work, data + beg, end - beg);
 		}
 		beg = end;
 	}
@@ -1842,7 +1911,7 @@ parse_listitem(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t 
 	inter = newbuf(doc, BUFFER_SPAN);
 
 	/* putting the first line into the working buffer */
-	hoedown_buffer_put(work, data + beg, end - beg);
+	custom_buffer_put(doc, work, data + beg, end - beg);
 	beg = end;
 
 	/* process the following lines */
@@ -1914,7 +1983,7 @@ parse_listitem(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t 
 		}
 
 		/* adding the line without prefix into the working buffer */
-		hoedown_buffer_put(work, data + beg + i, end - beg - i);
+		custom_buffer_put(doc, work, data + beg + i, end - beg - i);
 		beg = end;
 	}
 
@@ -2749,6 +2818,8 @@ hoedown_document_new(
 	hoedown_stack_new(&doc->work_bufs[BUFFER_BLOCK], 4);
 	hoedown_stack_new(&doc->work_bufs[BUFFER_SPAN], 8);
 
+	hoedown_stack_new(&doc->chunks, 16);
+
 	memset(doc->active_char, 0x0, 256);
 
 	if (doc->md.emphasis || doc->md.double_emphasis || doc->md.triple_emphasis) {
@@ -2797,18 +2868,13 @@ hoedown_document_new(
 }
 
 void
-hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, const uint8_t *document, size_t doc_size)
+hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, hoedown_buffer *text, const uint8_t *document, size_t doc_size)
 {
 	static const uint8_t UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
 
-	hoedown_buffer *text;
 	size_t beg, end;
 
 	int footnotes_enabled;
-
-	text = hoedown_buffer_new(64);
-	if (!text)
-		return;
 
 	/* Preallocate enough space for our buffer to avoid expanding while copying */
 	hoedown_buffer_grow(text, doc_size);
@@ -2868,7 +2934,9 @@ hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, const uint8_t
 		if (text->data[text->size - 1] != '\n' &&  text->data[text->size - 1] != '\r')
 			hoedown_buffer_putc(text, '\n');
 
+		map_chunk(doc, text, 0, text->size, 0);
 		parse_block(ob, doc, text->data, text->size);
+		doc->chunks.size--;
 	}
 
 	/* footnotes */
@@ -2879,7 +2947,6 @@ hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, const uint8_t
 		doc->md.doc_footer(ob, doc->md.opaque);
 
 	/* clean-up */
-	hoedown_buffer_free(text);
 	free_link_refs(doc->refs);
 	if (footnotes_enabled) {
 		free_footnote_list(&doc->footnotes_found, 1);
@@ -2888,6 +2955,8 @@ hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, const uint8_t
 
 	assert(doc->work_bufs[BUFFER_SPAN].size == 0);
 	assert(doc->work_bufs[BUFFER_BLOCK].size == 0);
+
+	assert(doc->chunks.size == 0);
 }
 
 void
@@ -2945,6 +3014,11 @@ hoedown_document_free(hoedown_document *doc)
 
 	hoedown_stack_free(&doc->work_bufs[BUFFER_SPAN]);
 	hoedown_stack_free(&doc->work_bufs[BUFFER_BLOCK]);
+
+	for (i = 0; i < (size_t)doc->chunks.asize; ++i)
+		free(doc->chunks.item[i]);
+
+	hoedown_stack_free(&doc->chunks);
 
 	free(doc);
 }

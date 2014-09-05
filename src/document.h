@@ -150,8 +150,11 @@ hoedown_document_new(
 	unsigned int extensions,
 	size_t max_nesting);
 
+extern size_t
+hoedown_document_locate(hoedown_document *doc, const uint8_t *character, size_t *position);
+
 extern void
-hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, const uint8_t *document, size_t doc_size);
+hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, hoedown_buffer *text, const uint8_t *document, size_t doc_size);
 
 extern void
 hoedown_document_render_inline(hoedown_document *doc, hoedown_buffer *ob, const uint8_t *document, size_t doc_size);
