@@ -114,6 +114,17 @@ static char_trigger markdown_char_ptrs[] = {
 	&char_math
 };
 
+/* maps a chunk of data to the position where it
+ * appears in the preprocessed Markdown source */
+struct mapped_chunk {
+	const hoedown_buffer *buffer; /* buffer where the chunk lives */
+	size_t offset;                /* position of the chunk in the buffer */
+	size_t size;                  /* size of the chunk */
+
+	size_t position;              /* position of the chunk in source */
+};
+typedef struct mapped_chunk mapped_chunk;
+
 /* render • structure containing state for a parser instance */
 struct hoedown_document {
 	hoedown_renderer md;
@@ -123,6 +134,7 @@ struct hoedown_document {
 	struct footnote_list footnotes_used;
 	uint8_t active_char[256];
 	hoedown_stack work_bufs[2];
+	hoedown_stack chunks;
 	unsigned int ext_flags;
 	size_t max_nesting;
 	int in_link_body;
@@ -131,6 +143,25 @@ struct hoedown_document {
 /***************************
  * HELPER FUNCTIONS *
  ***************************/
+
+static inline void
+map_chunk(hoedown_document *doc, const hoedown_buffer *buffer, size_t offset, size_t size, size_t position)
+{
+	hoedown_stack *chunks = &doc->chunks;
+	mapped_chunk *chunk;
+
+	if (chunks->size < chunks->asize && chunks->item[chunks->size]) {
+		chunk = chunks->item[chunks->size++];
+	} else {
+		chunk = malloc(sizeof(mapped_chunk));
+		hoedown_stack_push(chunks, chunk);
+	}
+
+	chunk->buffer = buffer;
+	chunk->offset = offset;
+	chunk->size = size;
+	chunk->position = position;
+}
 
 static inline hoedown_buffer *
 newbuf(hoedown_document *doc, int type)
@@ -2745,6 +2776,8 @@ hoedown_document_new(
 	hoedown_stack_new(&doc->work_bufs[BUFFER_BLOCK], 4);
 	hoedown_stack_new(&doc->work_bufs[BUFFER_SPAN], 8);
 
+	hoedown_stack_new(&doc->chunks, 16);
+
 	memset(doc->active_char, 0x0, 256);
 
 	if (doc->md.emphasis || doc->md.double_emphasis || doc->md.triple_emphasis) {
@@ -2878,6 +2911,8 @@ hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, hoedown_buffe
 
 	assert(doc->work_bufs[BUFFER_SPAN].size == 0);
 	assert(doc->work_bufs[BUFFER_BLOCK].size == 0);
+
+	assert(doc->chunks.size == 0);
 }
 
 void
@@ -2935,6 +2970,11 @@ hoedown_document_free(hoedown_document *doc)
 
 	hoedown_stack_free(&doc->work_bufs[BUFFER_SPAN]);
 	hoedown_stack_free(&doc->work_bufs[BUFFER_BLOCK]);
+
+	for (i = 0; i < (size_t)doc->chunks.asize; ++i)
+		free(doc->chunks.item[i]);
+
+	hoedown_stack_free(&doc->chunks);
 
 	free(doc);
 }
