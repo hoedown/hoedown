@@ -89,6 +89,32 @@ static const char *negative_prefix = "no-";
 #define DEF_OUNIT 64
 #define DEF_MAX_NESTING 16
 
+struct source_range {
+	size_t start;
+	size_t size;
+};
+typedef struct source_range source_range;
+
+static hoedown_document *document;
+static source_range ranges[100];
+static int range_count = 0;
+
+
+int math_callback(hoedown_buffer *ob, const hoedown_buffer *text, int displaymode, void *opaque) {
+	size_t offset = 0;
+	while (offset < text->size) {
+		source_range *range = &ranges[range_count];
+		range->size = hoedown_document_locate(document, text->data + offset, &range->start);
+		if (range->size > 0) {
+			if (offset + range->size > text->size)
+				range->size = text->size - offset;
+			range_count++;
+			offset += range->size;
+		} else offset++;
+	}
+	return 1;
+}
+
 
 /* PRINT HELP */
 
@@ -167,7 +193,6 @@ main(int argc, char **argv)
 	int renderer_type = RENDERER_HTML;
 
 	/* document */
-	hoedown_document *document;
 	unsigned int extensions = 0;
 	size_t max_nesting = DEF_MAX_NESTING;
 
@@ -449,6 +474,8 @@ main(int argc, char **argv)
 		return 4;
 	}
 
+	renderer->math = math_callback;
+
 
 	/* performing markdown rendering */
 	ob = hoedown_buffer_new(ounit);
@@ -475,7 +502,18 @@ main(int argc, char **argv)
 
 
 	/* writing the result to stdout */
-	(void)fwrite(ob->data, 1, ob->size, stdout);
+	size_t offset = 0;
+	for (i = 0; i < range_count; i++) {
+		source_range *range = &ranges[i];
+		fwrite(text->data + offset, range->start - offset, sizeof(uint8_t), stdout);
+
+		printf("\x1b[30m\x1b[44m"); // black text, yellow background
+		fwrite(text->data + range->start, range->size, sizeof(uint8_t), stdout);
+		printf("\x1b[m\x1b[K"); // reset, clear rest of line
+
+		offset = range->start + range->size;
+	}
+	fwrite(text->data + offset, text->size - offset, sizeof(uint8_t), stdout);
 
 
 	/* showing rendering time */
