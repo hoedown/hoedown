@@ -156,7 +156,7 @@ main(int argc, char **argv)
 	//struct timespec start, end;
 
 	/* buffers */
-	hoedown_buffer *ib, *ob;
+	hoedown_buffer *ib, *ob, *text;
 	size_t iunit = DEF_IUNIT, ounit = DEF_OUNIT;
 
 	/* files */
@@ -457,6 +457,12 @@ main(int argc, char **argv)
 		return 4;
 	}
 
+	text = hoedown_buffer_new(ounit);
+	if (!text) {
+		fprintf(stderr, "Couldn't allocate output buffer.\n");
+		return 4;
+	}
+
 	document = hoedown_document_new(renderer, extensions, max_nesting);
 	if (!document) {
 		fprintf(stderr, "Couldn't allocate document parser.\n");
@@ -464,7 +470,7 @@ main(int argc, char **argv)
 	}
 
 	//clock_gettime(CLOCK_MONOTONIC, &start);
-	hoedown_document_render(document, ob, ib->data, ib->size);
+	hoedown_document_render(document, ob, text, ib->data, ib->size);
 	//clock_gettime(CLOCK_MONOTONIC, &end);
 
 

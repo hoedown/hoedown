@@ -151,7 +151,7 @@ hoedown_document_new(
 	size_t max_nesting);
 
 extern void
-hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, const uint8_t *document, size_t doc_size);
+hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, hoedown_buffer *text, const uint8_t *document, size_t doc_size);
 
 extern void
 hoedown_document_render_inline(hoedown_document *doc, hoedown_buffer *ob, const uint8_t *document, size_t doc_size);

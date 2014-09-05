@@ -1278,7 +1278,7 @@ char_link(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offse
 
 	/* cleanup */
 cleanup:
-	doc->work_bufs[BUFFER_SPAN].size = (int)org_work_size;
+	while (doc->work_bufs[BUFFER_SPAN].size > org_work_size) popbuf(doc, BUFFER_SPAN);
 	return ret ? i : 0;
 }
 
@@ -1583,10 +1583,10 @@ static void parse_block(hoedown_buffer *ob, hoedown_document *doc,
 static size_t
 parse_blockquote(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size)
 {
-	size_t beg, end = 0, pre, work_size = 0;
-	uint8_t *work_data = 0;
-	hoedown_buffer *out = 0;
+	size_t beg, end = 0, pre;
+	hoedown_buffer *out = 0, *work = 0;
 
+	work = newbuf(doc, BUFFER_BLOCK);
 	out = newbuf(doc, BUFFER_BLOCK);
 	beg = 0;
 	while (beg < size) {
@@ -1604,19 +1604,15 @@ parse_blockquote(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_
 			break;
 
 		if (beg < end) { /* copy into the in-place working buffer */
-			/* hoedown_buffer_put(work, data + beg, end - beg); */
-			if (!work_data)
-				work_data = data + beg;
-			else if (data + beg != work_data + work_size)
-				memmove(work_data + work_size, data + beg, end - beg);
-			work_size += end - beg;
+			hoedown_buffer_put(work, data + beg, end - beg);
 		}
 		beg = end;
 	}
 
-	parse_block(out, doc, work_data, work_size);
+	parse_block(out, doc, work->data, work->size);
 	if (doc->md.blockquote)
 		doc->md.blockquote(ob, out, doc->md.opaque);
+	popbuf(doc, BUFFER_BLOCK);
 	popbuf(doc, BUFFER_BLOCK);
 	return end;
 }
@@ -2797,18 +2793,13 @@ hoedown_document_new(
 }
 
 void
-hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, const uint8_t *document, size_t doc_size)
+hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, hoedown_buffer *text, const uint8_t *document, size_t doc_size)
 {
 	static const uint8_t UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
 
-	hoedown_buffer *text;
 	size_t beg, end;
 
 	int footnotes_enabled;
-
-	text = hoedown_buffer_new(64);
-	if (!text)
-		return;
 
 	/* Preallocate enough space for our buffer to avoid expanding while copying */
 	hoedown_buffer_grow(text, doc_size);
@@ -2879,7 +2870,6 @@ hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, const uint8_t
 		doc->md.doc_footer(ob, doc->md.opaque);
 
 	/* clean-up */
-	hoedown_buffer_free(text);
 	free_link_refs(doc->refs);
 	if (footnotes_enabled) {
 		free_footnote_list(&doc->footnotes_found, 1);
