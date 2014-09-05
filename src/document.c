@@ -163,6 +163,39 @@ map_chunk(hoedown_document *doc, const hoedown_buffer *buffer, size_t offset, si
 	chunk->position = position;
 }
 
+size_t
+hoedown_document_locate(hoedown_document *doc, const uint8_t *character, size_t *position)
+{
+	hoedown_stack *chunks = &doc->chunks;
+	size_t i;
+	for (i = chunks->size; (i--) > 0;) {
+		mapped_chunk *chunk = chunks->item[i];
+		const uint8_t *chunk_data = chunk->buffer->data + chunk->offset;
+		if (character >= chunk_data && character < chunk_data + chunk->size) {
+			size_t character_offset = character - chunk_data;
+			*position = chunk->position + character_offset;
+			return chunk->size - character_offset;
+		}
+	}
+
+	return 0;
+}
+
+static inline void
+custom_buffer_put(hoedown_document *doc, hoedown_buffer *buffer, const uint8_t *data, size_t size) {
+	size_t offset = 0, position, chunk_size;
+	while (offset < size) {
+		chunk_size = hoedown_document_locate(doc, data + offset, &position);
+		if (chunk_size > 0) {
+			if (offset + chunk_size > size) chunk_size = size - offset;
+			map_chunk(doc, buffer, buffer->size + offset, chunk_size, position);
+			offset += chunk_size;
+		} else offset++;
+	}
+
+	hoedown_buffer_put(buffer, data, size);
+}
+
 static inline hoedown_buffer *
 newbuf(hoedown_document *doc, int type)
 {
@@ -185,7 +218,16 @@ newbuf(hoedown_document *doc, int type)
 static inline void
 popbuf(hoedown_document *doc, int type)
 {
-	doc->work_bufs[type].size--;
+	hoedown_stack *pool = &doc->work_bufs[type];
+	pool->size--;
+	hoedown_buffer *buffer = pool->item[pool->size];
+
+	hoedown_stack *chunks = &doc->chunks;
+	size_t i;
+	for (i = chunks->size; (i--) > 0;) {
+		mapped_chunk *chunk = chunks->item[i];
+		if (chunk->buffer == buffer) chunks->size = i;
+	}
 }
 
 static void
@@ -2892,7 +2934,9 @@ hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, hoedown_buffe
 		if (text->data[text->size - 1] != '\n' &&  text->data[text->size - 1] != '\r')
 			hoedown_buffer_putc(text, '\n');
 
+		map_chunk(doc, text, 0, text->size, 0);
 		parse_block(ob, doc, text->data, text->size);
+		doc->chunks.size--;
 	}
 
 	/* footnotes */
