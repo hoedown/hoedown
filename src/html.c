@@ -489,10 +489,10 @@ rndr_footnotes(hoedown_buffer *ob, const hoedown_buffer *text, void *opaque)
 	HOEDOWN_BUFPUTSL(ob, "<div class=\"footnotes\">\n");
 	hoedown_buffer_puts(ob, USE_XHTML(state) ? "<hr/>\n" : "<hr>\n");
 	HOEDOWN_BUFPUTSL(ob, "<ol>\n");
-	
+
 	if (text)
 		hoedown_buffer_put(ob, text->data, text->size);
-	
+
 	HOEDOWN_BUFPUTSL(ob, "\n</ol>\n</div>\n");
 }
 
@@ -501,7 +501,7 @@ rndr_footnote_def(hoedown_buffer *ob, const hoedown_buffer *text, unsigned int n
 {
 	size_t i = 0;
 	int pfound = 0;
-	
+
 	/* insert anchor at the end of first paragraph block */
 	if (text) {
 		while ((i+3) < text->size) {
@@ -514,7 +514,7 @@ rndr_footnote_def(hoedown_buffer *ob, const hoedown_buffer *text, unsigned int n
 			break;
 		}
 	}
-	
+
 	hoedown_buffer_printf(ob, "\n<li id=\"fn%d\">\n", num);
 	if (pfound) {
 		hoedown_buffer_put(ob, text->data, i);
@@ -637,7 +637,9 @@ hoedown_html_toc_renderer_new(int nesting_level)
 		NULL,
 
 		NULL,
-		toc_finalize
+		toc_finalize,
+
+        NULL
 	};
 
 	hoedown_html_renderer_state *state;
@@ -660,7 +662,7 @@ hoedown_html_toc_renderer_new(int nesting_level)
 	}
 
 	memcpy(renderer, &cb_default, sizeof(hoedown_renderer));
-	
+
 	renderer->opaque = state;
 	return renderer;
 }
@@ -668,7 +670,7 @@ hoedown_html_toc_renderer_new(int nesting_level)
 hoedown_renderer *
 hoedown_html_renderer_new(unsigned int render_flags, int nesting_level)
 {
-	static const hoedown_renderer cb_default = {		
+	static const hoedown_renderer cb_default = {
 		NULL,
 
 		rndr_blockcode,
@@ -706,7 +708,9 @@ hoedown_html_renderer_new(unsigned int render_flags, int nesting_level)
 		rndr_normal_text,
 
 		NULL,
-		NULL
+		NULL,
+
+        NULL
 	};
 
 	hoedown_html_renderer_state *state;
@@ -733,7 +737,7 @@ hoedown_html_renderer_new(unsigned int render_flags, int nesting_level)
 
 	if (render_flags & HOEDOWN_HTML_SKIP_HTML || render_flags & HOEDOWN_HTML_ESCAPE)
 		renderer->blockhtml = NULL;
-	
+
 	renderer->opaque = state;
 	return renderer;
 }

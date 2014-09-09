@@ -132,6 +132,9 @@ struct hoedown_renderer {
 	/* header and footer */
 	void (*doc_header)(hoedown_buffer *ob, void *opaque);
 	void (*doc_footer)(hoedown_buffer *ob, void *opaque);
+
+    /* custom construct */
+    void (*custom)(hoedown_buffer *ob, void *data, void *opaque);
 };
 
 typedef struct hoedown_renderer hoedown_renderer;
@@ -149,6 +152,21 @@ hoedown_document_new(
 	const hoedown_renderer *renderer,
 	unsigned int extensions,
 	size_t max_nesting);
+
+extern void
+hoedown_document_set_parse_custom(
+    hoedown_document *doc,
+    size_t (*func)(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size));
+
+extern hoedown_renderer *hoedown_document_get_renderer(hoedown_document *doc);
+
+extern void *hoedown_document_get_data(hoedown_document *doc);
+
+extern void
+hoedown_document_set_special_char(hoedown_document *doc, uint8_t c, int flag);
+
+extern void
+hoedown_document_remove_special_char(hoedown_document *doc, uint8_t c);
 
 extern void
 hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, const uint8_t *document, size_t doc_size);
