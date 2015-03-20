@@ -49,3 +49,6 @@ Super\^script
 [Foo\\\]](http://example.com)
 
 [Foo\\\\](http://example.com)
+
+Line break\
+Broken line

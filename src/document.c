@@ -917,6 +917,18 @@ char_escape(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t off
 			if (w) return w;
 		}
 
+		if (data[1] == '\n') {
+			if (doc->md.linebreak)
+				doc->md.linebreak(ob, &doc->data);
+			return 2;
+		}
+
+		if (size > 2 && data[1] == '\r' && data[2] == '\n') {
+			if (doc->md.linebreak)
+				doc->md.linebreak(ob, &doc->data);
+			return 3;
+		}
+
 		if (strchr(escape_chars, data[1]) == NULL)
 			return 0;
 
