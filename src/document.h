@@ -4,7 +4,7 @@
 #define HOEDOWN_DOCUMENT_H
 
 #include "buffer.h"
-#include "autolink.h"
+#include "list.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -182,6 +182,12 @@ typedef struct hoedown_renderer_data {
   hoedown_internal *doc;
 } hoedown_renderer_data;
 
+typedef struct hoedown_range {
+  size_t source;
+  size_t size;
+  size_t skip;
+} hoedown_range;
+
 typedef struct hoedown_renderer {
   void *opaque;
 
@@ -252,6 +258,13 @@ void *hoedown_document_render(
   hoedown_document *doc,
   const uint8_t *data, size_t size,
   int is_inline, void *request
+);
+
+/* hoedown_document_locate: locate original position(s) of a chunk of Markdown */
+int hoedown_document_locate(
+  hoedown_internal *doc,
+  hoedown_list *ranges,
+  const uint8_t *data, size_t size
 );
 
 /* hoedown_document_free: deallocate a document processor */

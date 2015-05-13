@@ -88,6 +88,17 @@ typedef struct link_ref {
   int has_title;
 } link_ref;
 
+typedef struct buffer_mapping {
+  struct buffer_mapping *previous;
+
+  hoedown_buffer *buffer;
+  hoedown_list ranges;
+  size_t size;
+
+  size_t last_i;
+  size_t last_position;
+} buffer_mapping;
+
 struct hoedown_document {
   // Renderer stuff
   hoedown_renderer rndr;
@@ -119,6 +130,10 @@ struct hoedown_document {
   // Marker parsing
   link_ref *link_refs [LINK_REFS_TABLE_SIZE];
   hoedown_pool link_refs__pool;
+
+  // Other features: source mapping
+  buffer_mapping *mapping;
+  hoedown_pool mapping__pool;
 };
 
 
@@ -140,6 +155,21 @@ SIMPLE_ALLOCATOR(inline_data)
 SIMPLE_ALLOCATOR(inline_nesting)
 
 static void _free_pool_item(void *item, void *opaque) {
+  free(item);
+}
+
+
+static void *_new_buffer_mapping(void *opaque) {
+  buffer_mapping *mapping = hoedown_malloc(sizeof(buffer_mapping));
+  mapping->previous = NULL;
+  mapping->buffer = NULL;
+  hoedown_list_init(&mapping->ranges, sizeof(hoedown_range), 2);
+  return mapping;
+}
+
+static void _free_buffer_mapping(void *item, void *opaque) {
+  buffer_mapping *mapping = item;
+  hoedown_list_uninit(&mapping->ranges);
   free(item);
 }
 
@@ -315,6 +345,171 @@ static inline void close_inline_data(hoedown_document *doc, void *target) {
 
   doc->inline_data = inline_data->previous;
   hoedown_pool_pop(&doc->inline_data__pool, inline_data);
+}
+
+
+// SOURCE MAPPING
+
+// Get a buffer from a pool, and create a mapping for it.
+static inline hoedown_buffer *get_mapped_buffer(hoedown_document *doc, hoedown_pool *pool) {
+  hoedown_buffer *buffer = hoedown_pool_get(pool);
+
+  buffer_mapping *mapping = hoedown_pool_get(&doc->mapping__pool);
+  mapping->previous = doc->mapping;
+  mapping->buffer = buffer;
+  mapping->ranges.size = 0;
+  mapping->size = 0;
+  mapping->last_i = 0;
+  mapping->last_position = 0;
+  doc->mapping = mapping;
+  return buffer;
+}
+
+// Return a buffer to its pool, and delete its mapping.
+static inline void pop_mapped_buffer(hoedown_document *doc, hoedown_pool *pool, hoedown_buffer *buffer) {
+  buffer_mapping *mapping = doc->mapping;
+  assert(mapping->buffer == buffer);
+  assert(mapping->size <= buffer->size);
+  doc->mapping = doc->mapping->previous;
+  hoedown_pool_pop(&doc->mapping__pool, mapping);
+  hoedown_pool_pop(pool, buffer);
+}
+
+// Copy ranges covering start..end into another list.
+// Returns position where the last copied range ends
+static size_t copy_ranges(hoedown_list *dest, buffer_mapping *mapping, size_t start, size_t end) {
+  size_t i = 0, count = mapping->ranges.size;
+  size_t position = 0, mark;
+  const hoedown_range *ranges = mapping->ranges.data;
+
+  // Optimization: try to start from last looked up range
+  if (mapping->last_position <= start) {
+    i = mapping->last_i;
+    position = mapping->last_position;
+  }
+
+  // Find the first pertinent range
+  while (position <= start) {
+    if (i >= count) return start;
+    position += ranges[i].skip + ranges[i].size;
+    i++;
+  }
+
+  // Skip previous ranges
+  ranges += i-1;
+  count -= i-1;
+
+  // Find the last pertinent range
+  mark = position - ranges[0].size;
+  if (mark >= end) return start;
+  for (i = 1; i < count; i++) {
+    if (position + ranges[i].skip >= end) break;
+    position += ranges[i].skip + ranges[i].size;
+  }
+
+  // Copy pertinent ranges to dest!
+  hoedown_list_grow(dest, dest->size + i);
+  hoedown_range *dranges = dest->data + dest->size*sizeof(hoedown_range);
+  memcpy(dranges, ranges, i*sizeof(hoedown_range));
+  dest->size += i;
+  mapping->last_i = i-1 + mapping->ranges.size - count;
+  mapping->last_position = position - (ranges[i-1].skip + ranges[i-1].size);
+
+  // Adjust first range
+  if (likely(mark < start)) {
+    dranges[0].skip = 0;
+    dranges[0].size -= start - mark;
+    dranges[0].source += start - mark;
+  } else {
+    dranges[0].skip = start - mark;
+  }
+
+  // Adjust last range
+  if (likely(position > end)) {
+    dranges[i-1].size -= position - end;
+    return end;
+  }
+  return position;
+}
+
+// Locate a string in `mapping` or previous ones.
+static inline int locate_ranges(hoedown_list *ranges, const uint8_t *data, size_t size, buffer_mapping *mapping, size_t *span) {
+  for (; mapping; mapping = mapping->previous) {
+    // Check to see if the data chunk points to this buffer
+    hoedown_buffer *buffer = mapping->buffer;
+    if (data < buffer->data || data + size > buffer->data + buffer->size)
+      continue;
+
+    // Search for the first range to cover this chunk of data
+    size_t start = data - buffer->data;
+    size_t end = start + size;
+    end = copy_ranges(ranges, mapping, start, end);
+    if (span) *span = end - start;
+    return 1;
+  }
+  return 0;
+}
+
+// Put a string into a mapping's buffer, and map it.
+static inline void mapping_put(buffer_mapping *mapping, buffer_mapping *srcmapping, const uint8_t *data, size_t size) {
+  hoedown_buffer *buffer = mapping->buffer;
+  assert(mapping->size <= buffer->size);
+
+  // Locate the data to put, append to current ranges
+  size_t first = mapping->ranges.size, span;
+  if (locate_ranges(&mapping->ranges, data, size, srcmapping, &span) && span) {
+    hoedown_range *ranges = mapping->ranges.data;
+    ranges[first].skip += buffer->size - mapping->size;
+    mapping->size = buffer->size + size;
+  }
+
+  // Put the data into the buffer
+  hoedown_buffer_put(buffer, data, size);
+}
+
+// Update a mapping as necessary to rewind the buffer to a certain size
+static inline void mapping_rewind(buffer_mapping *mapping, size_t size) {
+  hoedown_range *ranges = mapping->ranges.data;
+  assert(mapping->buffer->size >= size);
+  mapping->buffer->size = size;
+
+  while (size < mapping->size) {
+    hoedown_range *current = &ranges[mapping->ranges.size-1];
+    if (size > mapping->size - current->size) {
+      current->size -= mapping->size - size;
+      break;
+    }
+    mapping->size -= current->size + current->skip;
+    mapping->ranges.size--;
+  }
+}
+
+// Put a string into a buffer, search for its mapping, and map it.
+static inline void mapped_buffer_put(hoedown_document *doc, hoedown_buffer *buffer, const uint8_t *data, size_t size) {
+  buffer_mapping *mapping;
+  for (mapping = doc->mapping; mapping; mapping = mapping->previous) {
+    // Is this the mapping for our buffer?
+    if (mapping->buffer != buffer) continue;
+    mapping_put(mapping, mapping->previous, data, size);
+    return;
+  }
+
+  // We can't let this happen
+  abort();
+}
+
+// Search for a buffer's mapping, and rewind it to the specified size
+static inline void mapped_buffer_rewind(hoedown_document *doc, hoedown_buffer *buffer, size_t size) {
+  buffer_mapping *mapping;
+  for (mapping = doc->mapping; mapping; mapping = mapping->previous) {
+    // Is this the mapping for our buffer?
+    if (mapping->buffer != buffer) continue;
+    mapping_rewind(mapping, size);
+    return;
+  }
+
+  // We can't let this happen
+  abort();
 }
 
 
@@ -522,7 +717,7 @@ static inline void unescape_both(hoedown_document *doc, hoedown_buffer *ob, cons
 }
 
 // Preprocesses the input by normalizing linebreaks and expanding tabs to a four-character tabstop.
-static inline void normalize_spacing(hoedown_buffer *ob, const uint8_t *data, size_t size) {
+static inline void normalize_spacing(hoedown_document *doc, hoedown_buffer *ob, const uint8_t *data, size_t size) {
   size_t i = 0, line_start = ob->size, mark;
   static const uint8_t *tab = (const uint8_t *)"    ";
   hoedown_buffer_grow(ob, size);
@@ -543,7 +738,8 @@ static inline void normalize_spacing(hoedown_buffer *ob, const uint8_t *data, si
     }
 
     // Copy accumulated data
-    hoedown_buffer_put(ob, data + mark, i - mark);
+    if (doc) mapped_buffer_put(doc, ob, data + mark, i - mark);
+    else hoedown_buffer_put(ob, data + mark, i - mark);
 
     if (i >= size) break;
 
@@ -2146,7 +2342,7 @@ static size_t parse_horizontal_rule(hoedown_document *doc, void *target, const u
 static size_t parse_indented_code_block(hoedown_document *doc, void *target, const uint8_t *data, size_t parsed, size_t start, size_t size) {
   size_t i = start, mark;
   size_t last_non_empty_line = 0;
-  hoedown_buffer *code = hoedown_pool_get(&doc->block_buffers);
+  hoedown_buffer *code = get_mapped_buffer(doc, &doc->block_buffers);
   code->size = 0;
 
   while (1) {
@@ -2166,7 +2362,7 @@ static size_t parse_indented_code_block(hoedown_document *doc, void *target, con
 
     while (i < size && data[i] != '\n') i++;
     if (i < size) i++;
-    hoedown_buffer_put(code, data + mark, i - mark);
+    mapped_buffer_put(doc, code, data + mark, i - mark);
     if (!last_non_empty_line) last_non_empty_line = code->size;
   }
 
@@ -2174,7 +2370,7 @@ static size_t parse_indented_code_block(hoedown_document *doc, void *target, con
   i = mark;
 
   // Rewind the work buffer to cut empty lines at the end
-  code->size = last_non_empty_line;
+  mapped_buffer_rewind(doc, code, last_non_empty_line);
 
   // Render!
   if (doc->mode == NORMAL_PARSING) {
@@ -2185,7 +2381,7 @@ static size_t parse_indented_code_block(hoedown_document *doc, void *target, con
     doc->rndr.indented_code_block(target, code, &doc->data);
   }
 
-  hoedown_pool_pop(&doc->block_buffers, code);
+  pop_mapped_buffer(doc, &doc->block_buffers, code);
   return i;
 }
 
@@ -2245,7 +2441,7 @@ static size_t parse_fenced_code_block(hoedown_document *doc, void *target, const
 
   // Parse the content
   if (unlikely(indentation) && doc->mode == NORMAL_PARSING) {
-    hoedown_buffer *code = hoedown_pool_get(&doc->block_buffers);
+    hoedown_buffer *code = get_mapped_buffer(doc, &doc->block_buffers);
     code->size = 0;
 
     size_t line_start;
@@ -2267,7 +2463,7 @@ static size_t parse_fenced_code_block(hoedown_document *doc, void *target, const
       while (mark < size && data[mark] == ' ' && mark - line_start < indentation) mark++;
 
       // Copy line into work buffer
-      hoedown_buffer_put(code, data + mark, i - mark);
+      mapped_buffer_put(doc, code, data + mark, i - mark);
     }
 
     // Render!
@@ -2277,7 +2473,7 @@ static size_t parse_fenced_code_block(hoedown_document *doc, void *target, const
     set_buffer_data(&doc->data.src[1], code->data, 0, code->size);
     // already set
     doc->rndr.fenced_code_block(target, code, info->size ? info : NULL, &doc->data);
-    hoedown_pool_pop(&doc->block_buffers, code);
+    pop_mapped_buffer(doc, &doc->block_buffers, code);
   } else {
     // Optimization: When indentation is 0 we don't need intermediate buffers.
     size_t text_start = i, line_start;
@@ -2538,7 +2734,7 @@ static inline size_t parse_quote_block_content(hoedown_document *doc, void *cont
       while (i < size && data[i] != '\n') i++;
       if (i < size) i++;
 
-      hoedown_buffer_put(work, data + mark, i - mark);
+      mapped_buffer_put(doc, work, data + mark, i - mark);
       continue;
     }
 
@@ -2554,7 +2750,7 @@ static inline size_t parse_quote_block_content(hoedown_document *doc, void *cont
       if (i >= size || next_line_empty(data + i, size - i) || parse_quote_block_prefix(data + i, size - i))
         break;
     }
-    hoedown_buffer_put(work, data + mark, i - mark);
+    mapped_buffer_put(doc, work, data + mark, i - mark);
 
     // If the next line is prefixed, the block could continue.
     // Otherwise, we can be sure it ends here and return immediately.
@@ -2599,7 +2795,7 @@ static size_t parse_quote_block(hoedown_document *doc, void *target, const uint8
   if (mark == i) return 0;
 
   // Get working buffer & content
-  work = hoedown_pool_get(&doc->block_buffers);
+  work = get_mapped_buffer(doc, &doc->block_buffers);
   work->size = 0;
 
   if (doc->mode == NORMAL_PARSING)
@@ -2610,7 +2806,7 @@ static size_t parse_quote_block(hoedown_document *doc, void *target, const uint8
   while (i < size && data[i] != '\n') i++;
   if (i < size) i++;
 
-  hoedown_buffer_put(work, data + mark, i - mark);
+  mapped_buffer_put(doc, work, data + mark, i - mark);
 
   // Parse rest of content
   i += parse_quote_block_content(doc, content, work, data + i, size - i);
@@ -2624,7 +2820,7 @@ static size_t parse_quote_block(hoedown_document *doc, void *target, const uint8
     doc->rndr.object_pop(content, 0, &doc->data);
   }
 
-  hoedown_pool_pop(&doc->block_buffers, work);
+  pop_mapped_buffer(doc, &doc->block_buffers, work);
   return i;
 }
 
@@ -2676,7 +2872,7 @@ static size_t collect_list_items__lines(hoedown_document *doc, const uint8_t *da
       // EMPTY LINE
       if (last_position < mark) double_empty = 1;
       if (i < size) i++;
-      hoedown_buffer_put(work, data + mark, i - mark);
+      mapped_buffer_put(doc, work, data + mark, i - mark);
       continue;
     }
 
@@ -2697,7 +2893,7 @@ static size_t collect_list_items__lines(hoedown_document *doc, const uint8_t *da
       if (mark > i) mark = i;
       while (i < size && data[i] != '\n') i++;
       if (i < size) i++;
-      hoedown_buffer_put(work, data + mark, i - mark);
+      mapped_buffer_put(doc, work, data + mark, i - mark);
 
       if ((!*is_loose && last_size + (i - mark) < work->size) || double_empty) {
         // We check if this line and the empty lines before belong to a fenced
@@ -2719,7 +2915,7 @@ static size_t collect_list_items__lines(hoedown_document *doc, const uint8_t *da
     mark = i;
     while (i < size && data[i] != '\n') i++;
     if (i < size) i++;
-    hoedown_buffer_put(work, data + mark, i - mark);
+    mapped_buffer_put(doc, work, data + mark, i - mark);
 
     result = parse_block(doc, NULL, work->data + parsed, last_size - parsed, work->size - parsed, HOEDOWN_FT_LIST | HOEDOWN_FT_QUOTE_BLOCK);
     if (result == last_size - parsed) break;
@@ -2738,7 +2934,7 @@ static size_t collect_list_items__lines(hoedown_document *doc, const uint8_t *da
     } else *is_loose = 1;
   }
 
-  work->size = last_size;
+  mapped_buffer_rewind(doc, work, last_size);
   return (*marker_result) ? mark : last_position;
 }
 
@@ -2781,7 +2977,7 @@ static size_t collect_list_items(hoedown_document *doc, const uint8_t *data, siz
     mark = i;
     while (i < size && data[i] != '\n') i++;
     if (i < size) i++;
-    hoedown_buffer_put(work, data + mark, i - mark);
+    mapped_buffer_put(doc, work, data + mark, i - mark);
 
     // Collect rest of the lines
     result = 0;
@@ -2805,7 +3001,7 @@ static size_t parse_list(hoedown_document *doc, void *target, const uint8_t *dat
   int is_ordered, is_loose = (current_mode == NORMAL_PARSING) ? 0 : 1, number = 0;
   void *content;
 
-  hoedown_buffer *work = hoedown_pool_get(&doc->block_buffers);
+  hoedown_buffer *work = get_mapped_buffer(doc, &doc->block_buffers);
   hoedown_buffer *slices = hoedown_pool_get(&doc->inline_buffers);
   work->size = slices->size = 0;
 
@@ -2816,13 +3012,13 @@ static size_t parse_list(hoedown_document *doc, void *target, const uint8_t *dat
 
   if (i == start) {
     hoedown_pool_pop(&doc->inline_buffers, slices);
-    hoedown_pool_pop(&doc->block_buffers, work);
+    pop_mapped_buffer(doc, &doc->block_buffers, work);
     return 0;
   }
 
   if (current_mode == DUMB_PARSING) {
     hoedown_pool_pop(&doc->inline_buffers, slices);
-    hoedown_pool_pop(&doc->block_buffers, work);
+    pop_mapped_buffer(doc, &doc->block_buffers, work);
     return i;
   }
 
@@ -2840,7 +3036,7 @@ static size_t parse_list(hoedown_document *doc, void *target, const uint8_t *dat
     if (current_mode == NORMAL_PARSING) {
       void *item_content = doc->rndr.object_get(0, &doc->data);
       parse_block(doc, item_content, work->data + offset, new_offset - offset, new_offset - offset, 0);
-      set_buffer_data(&doc->data.src[0], data, source, new_source);
+      set_buffer_data(&doc->data.src[0], data + start, source, new_source);
       set_buffer_data(&doc->data.src[1], work->data, offset, new_offset);
       doc->rndr.list_item(content, item_content, is_ordered, !is_loose, &doc->data);
       doc->rndr.object_pop(item_content, 0, &doc->data);
@@ -2864,7 +3060,7 @@ static size_t parse_list(hoedown_document *doc, void *target, const uint8_t *dat
   }
 
   hoedown_pool_pop(&doc->inline_buffers, slices);
-  hoedown_pool_pop(&doc->block_buffers, work);
+  pop_mapped_buffer(doc, &doc->block_buffers, work);
   return i;
 }
 
@@ -3406,6 +3602,10 @@ hoedown_document *hoedown_document_new(
   memset(&doc->link_refs, 0, sizeof(doc->link_refs));
   hoedown_pool_init(&doc->link_refs__pool, 8, _new_link_ref, _free_pool_item, NULL);
 
+  // Other features: source mapping
+  doc->mapping = NULL;
+  hoedown_pool_init(&doc->mapping__pool, 8, _new_buffer_mapping, _free_buffer_mapping, NULL);
+
   return doc;
 }
 
@@ -3424,6 +3624,7 @@ void hoedown_document_free(hoedown_document *doc) {
   hoedown_pool_uninit(&doc->inline_data__pool);
   hoedown_pool_uninit(&doc->inline_nesting__pool);
   hoedown_pool_uninit(&doc->link_refs__pool);
+  hoedown_pool_uninit(&doc->mapping__pool);
 
   free(doc);
 }
@@ -3434,22 +3635,25 @@ void *hoedown_document_render(
   const uint8_t *data, size_t size,
   int is_inline, void *request
 ) {
-  const uint8_t *odata = data;
-  size_t osize = size;
-  hoedown_buffer *text = NULL;
+  // Add root mapping
+  hoedown_buffer original = {(uint8_t *)data, size, 0, 0, NULL, NULL};
+  hoedown_range root_range = {0, size, 0};
+  buffer_mapping root_mapping = {NULL, &original, {&root_range,1,0,0}, size, 0,0};
+  doc->mapping = &root_mapping;
 
   // Preprocess the input
+  hoedown_buffer *text = NULL;
   if (doc->ft & HOEDOWN_FT_PREPROCESS) {
-    text = hoedown_pool_get(&doc->block_buffers);
+    text = get_mapped_buffer(doc, &doc->block_buffers);
     text->size = 0;
-    normalize_spacing(text, data, size);
+    normalize_spacing(doc, text, data, size);
     data = text->data;
     size = text->size;
   }
 
   // Prepare
   doc->data.request = request;
-  set_buffer_data(&doc->data.src[0], odata, 0, osize);
+  set_buffer_data(&doc->data.src[0], original.data, 0, original.size);
   doc->rndr.render_start(is_inline, &doc->data);
   void *target = doc->rndr.object_get(is_inline, &doc->data);
 
@@ -3464,10 +3668,10 @@ void *hoedown_document_render(
   }
 
   // Finish & cleanup
-  set_buffer_data(&doc->data.src[0], odata, 0, osize);
+  set_buffer_data(&doc->data.src[0], original.data, 0, original.size);
   void *result = doc->rndr.render_end(target, is_inline, &doc->data);
 
-  if (text) hoedown_pool_pop(&doc->block_buffers, text);
+  if (text) pop_mapped_buffer(doc, &doc->block_buffers, text);
   assert(doc->current_nesting == 0);
   assert(doc->mode == NORMAL_PARSING);
   assert(doc->block_buffers.size == doc->block_buffers.isize);
@@ -3482,6 +3686,9 @@ void *hoedown_document_render(
   pop_link_refs(doc);
   memset(&doc->link_refs, 0, sizeof(doc->link_refs));
   assert(doc->link_refs__pool.size == doc->link_refs__pool.isize);
+  assert(doc->mapping == &root_mapping);
+  doc->mapping = NULL;
+  assert(doc->mapping__pool.size == doc->mapping__pool.isize);
   return result;
 }
 
@@ -3489,5 +3696,10 @@ void *hoedown_document_render(
 // Exposed internals & utilities
 
 void hoedown_preprocess(hoedown_buffer *ob, const uint8_t *data, size_t size) {
-  normalize_spacing(ob, data, size);
+  normalize_spacing(NULL, ob, data, size);
 }
+
+int hoedown_document_locate(hoedown_internal *doc, hoedown_list *ranges, const uint8_t *data, size_t size) {
+  return locate_ranges(ranges, data, size, ((hoedown_document *)doc)->mapping, NULL);
+}
+
