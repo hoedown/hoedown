@@ -1461,24 +1461,23 @@ parse_codefence(uint8_t *data, size_t size, hoedown_buffer *lang, size_t *width,
 	return w;
 }
 
+/* is_atxheader_level • returns whether the line is a hash-prefixed header, also returns the level of the header */
+static int is_atxheader_level(hoedown_document *doc, uint8_t *data, size_t size, size_t *level)
+{
+    *level = 0;
+    if (*data != '#') return 0;
+    int limit = size < 6 ? size : 6;
+    while (data[++*level] == '#' && *level < limit);
+    if (!(doc->ext_flags & HOEDOWN_EXT_SPACE_HEADERS)) return 1;
+    return (*level < size && data[*level] == ' ');
+}
+
 /* is_atxheader • returns whether the line is a hash-prefixed header */
 static int
 is_atxheader(hoedown_document *doc, uint8_t *data, size_t size)
 {
-	if (data[0] != '#')
-		return 0;
-
-	if (doc->ext_flags & HOEDOWN_EXT_SPACE_HEADERS) {
-		size_t level = 0;
-
-		while (level < size && level < 6 && data[level] == '#')
-			level++;
-
-		if (level < size && data[level] != ' ')
-			return 0;
-	}
-
-	return 1;
+        size_t level;
+        return is_atxheader_level(doc, data, size, &level);
 }
 
 /* is_headerline • returns whether the line is a setext-style hdr underline */
@@ -2489,6 +2488,75 @@ parse_block(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t siz
 	}
 }
 
+/* parse_first_block • parsing of one block, the length that has been parsed is returned as o_parsed */
+int parse_first_block(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size, int *o_parsed)
+{
+    int format = 0;
+    size_t beg = 0, i, headerlevel;
+
+    if (!(*data)) return -1;
+
+    is_atxheader_level(doc, data, size, &headerlevel);
+    
+    if (headerlevel) {
+        beg += parse_atxheader(ob, doc, data, size);
+        format = 10 + headerlevel;
+
+    } else if (data[beg] == '<' && doc->md.blockhtml &&
+            (i = parse_htmlblock(ob, doc, data, size, 1)) != 0) {
+        beg += i;
+        format = 1;
+
+    } else if ((i = is_empty(data, size)) != 0) {
+        beg += i;
+        format = 2;
+
+    } else if (is_hrule(data, size)) {
+        if (doc->md.hrule) {
+            doc->md.hrule(ob, &doc->data);
+        }
+
+        while (beg < size && data[beg] != '\n') {
+            beg++;
+        }
+
+        beg++;
+        format = 3;
+
+    } else if ((doc->ext_flags & HOEDOWN_EXT_FENCED_CODE) != 0 &&
+            (i = parse_fencedcode(ob, doc, data, size)) != 0) {
+        beg += i;
+        format = 4;
+
+    } else if ((doc->ext_flags & HOEDOWN_EXT_TABLES) != 0 &&
+            (i = parse_table(ob, doc, data, size)) != 0) {
+        beg += i;
+        format = 5;
+
+    } else if (prefix_quote(data, size)) {
+        beg += parse_blockquote(ob, doc, data, size);
+        format = 6;
+
+    } else if (!(doc->ext_flags & HOEDOWN_EXT_DISABLE_INDENTED_CODE) && prefix_code(data, size)) {
+        beg += parse_blockcode(ob, doc, data, size);
+        format = 7;
+
+    } else if (prefix_uli(data, size)) {
+        beg += parse_list(ob, doc, data, size, 0);
+        format = 8;
+
+    } else if (prefix_oli(data, size)) {
+        beg += parse_list(ob, doc, data, size, HOEDOWN_LIST_ORDERED);
+        format = 9;
+
+    } else {
+        beg += parse_paragraph(ob, doc, data, size);
+        format = 10;
+    }
+
+    *o_parsed = beg;
+    return format;
+}
 
 
 /*********************
