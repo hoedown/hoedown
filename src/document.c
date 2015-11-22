@@ -549,7 +549,7 @@ find_emph_char(uint8_t *data, size_t size, uint8_t c)
 			}
 
 			/* not a well-formed codespan; use found matching emph char */
-			if (bt < span_nb && i >= size) return tmp_i;
+			if (i >= size) return tmp_i;
 		}
 		/* skipping a link */
 		else if (data[i] == '[') {
@@ -1008,11 +1008,7 @@ char_autolink_www(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size
 		HOEDOWN_BUFPUTSL(link_url, "http://");
 		hoedown_buffer_put(link_url, link->data, link->size);
 
-		if (ob->size > rewind)
-			ob->size -= rewind;
-		else
-			ob->size = 0;
-
+		ob->size -= rewind;
 		if (doc->md.normal_text) {
 			link_text = newbuf(doc, BUFFER_SPAN);
 			doc->md.normal_text(link_text, link, &doc->data);
@@ -1040,11 +1036,7 @@ char_autolink_email(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, si
 	link = newbuf(doc, BUFFER_SPAN);
 
 	if ((link_len = hoedown_autolink__email(&rewind, link, data, offset, size, 0)) > 0) {
-		if (ob->size > rewind)
-			ob->size -= rewind;
-		else
-			ob->size = 0;
-
+		ob->size -= rewind;
 		doc->md.autolink(ob, link, HOEDOWN_AUTOLINK_EMAIL, &doc->data);
 	}
 
@@ -1064,11 +1056,7 @@ char_autolink_url(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size
 	link = newbuf(doc, BUFFER_SPAN);
 
 	if ((link_len = hoedown_autolink__url(&rewind, link, data, offset, size, 0)) > 0) {
-		if (ob->size > rewind)
-			ob->size -= rewind;
-		else
-			ob->size = 0;
-
+		ob->size -= rewind;
 		doc->md.autolink(ob, link, HOEDOWN_AUTOLINK_NORMAL, &doc->data);
 	}
 
@@ -1199,10 +1187,8 @@ char_link(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offse
 			link_e--;
 
 		/* remove optional angle brackets around the link */
-		if (data[link_b] == '<' && data[link_e - 1] == '>') {
-			link_b++;
-			link_e--;
-		}
+		if (data[link_b] == '<') link_b++;
+		if (data[link_e - 1] == '>') link_e--;
 
 		/* building escaped link and title */
 		if (link_e > link_b) {
@@ -1400,6 +1386,30 @@ is_hrule(uint8_t *data, size_t size)
 	return n >= 3;
 }
 
+
+/* check whether the line is centerofline rule (begin by ->) mengzy */
+static int
+is_centerofline(uint8_t *data, size_t size)
+{
+    size_t i = 0, n = 0;
+    
+    /* looking at the centerofline uint8_t */
+    if (i + 5 > size || (data[i] != '-') || (data[i+1] != '>'))
+        return 0;
+    i += 2;
+    /* the line must end in <- */
+    while (i < size && data[i] != '\n') {
+        if (data[i-1] == '<' && data[i] == '-')
+            n = 1;
+        if (data[i-2] == '<'  && data[i-1] == '-' && data[i] == ' ')
+            n = 1;
+        i++;
+    }
+    
+    return n == 1;
+}
+
+
 /* check if a line is a code fence; return the
  * end of the code fence. if passed, width of
  * the fence rule and character will be returned */
@@ -1536,7 +1546,8 @@ prefix_quote(uint8_t *data, size_t size)
 
 	return 0;
 }
-
+                          
+                          
 /* prefix_code • returns prefix length for block code*/
 static size_t
 prefix_code(uint8_t *data, size_t size)
@@ -1807,6 +1818,56 @@ parse_blockcode(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t
 	popbuf(doc, BUFFER_BLOCK);
 	return beg;
 }
+                          
+                        
+/* parse the centerof line content mengzy */
+
+/* TO-DOs:
+   [x] removing trailing spaces!!
+   [x] embeded formats like emphersize in inside of center!!
+ */
+
+static size_t
+parse_centerofline(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size)
+{
+    size_t beg = 0, end, i , tmp = 2;
+    hoedown_buffer *work = 0, *inter = 0;
+    
+    work = newbuf(doc, BUFFER_BLOCK);
+    inter = newbuf(doc, BUFFER_SPAN);
+    
+    beg += 2; // skipping the prefix '->'
+    
+    if (beg < size) {
+        
+        for (end = beg + 1; end < size && data[end] != '\n'; end++) {};
+        
+        for (i = end-1; i > beg; i--) {
+            if (data[i] != ' ') break;
+            else tmp += 1; // ignoring trailing blanck space
+            }
+        
+        end -= tmp; // trimming spaces and '<-'
+        
+        if (beg < end) {
+            
+            hoedown_buffer_put(work, data + beg, end - beg);
+            parse_block(inter, doc, work->data, work->size);
+            beg = end + tmp;
+            
+        }
+    }
+    
+    if (doc->md.centerofline)
+        doc->md.centerofline(ob, inter, &doc->data);
+    
+    popbuf(doc, BUFFER_BLOCK);
+    popbuf(doc, BUFFER_SPAN);
+    
+    return beg;
+}
+                          
+
 
 /* parse_listitem • parsing of a single list item */
 /*	assuming initial prefix is already removed */
@@ -2465,6 +2526,12 @@ parse_block(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t siz
 
 			beg++;
 		}
+        
+        /*  mengzy */
+        
+        else if (is_centerofline(txt_data, end)) {
+            beg += parse_centerofline(ob, doc, txt_data, end);
+        }
 
 		else if ((doc->ext_flags & HOEDOWN_EXT_FENCED_CODE) != 0 &&
 			(i = parse_fencedcode(ob, doc, txt_data, end)) != 0)

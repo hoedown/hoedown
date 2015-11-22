@@ -120,6 +120,14 @@ rndr_blockquote(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown
 	HOEDOWN_BUFPUTSL(ob, "</blockquote>\n");
 }
 
+static void
+rndr_centerofline(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data)
+{
+    HOEDOWN_BUFPUTSL(ob, "<center>");
+    hoedown_buffer_put(ob, content->data, content->size);
+    HOEDOWN_BUFPUTSL(ob, "</center>\n");
+}
+
 static int
 rndr_codespan(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_renderer_data *data)
 {
@@ -624,6 +632,7 @@ hoedown_html_toc_renderer_new(int nesting_level)
 
 		NULL,
 		NULL,
+        NULL,
 		toc_header,
 		NULL,
 		NULL,
@@ -687,6 +696,7 @@ hoedown_html_renderer_new(hoedown_html_flags render_flags, int nesting_level)
 
 		rndr_blockcode,
 		rndr_blockquote,
+        rndr_centerofline,
 		rndr_header,
 		rndr_hrule,
 		rndr_list,
