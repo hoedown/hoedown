@@ -101,7 +101,7 @@ struct hoedown_renderer {
 	/* block level callbacks - NULL skips the block */
 	void (*blockcode)(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buffer *lang, const hoedown_renderer_data *data);
 	void (*blockquote)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-        void (*centerofline)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
+	void (*centerofline)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
 	void (*header)(hoedown_buffer *ob, const hoedown_buffer *content, int level, const hoedown_renderer_data *data);
 	void (*hrule)(hoedown_buffer *ob, const hoedown_renderer_data *data);
 	void (*list)(hoedown_buffer *ob, const hoedown_buffer *content, hoedown_list_flags flags, const hoedown_renderer_data *data);
