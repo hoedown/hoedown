@@ -489,6 +489,13 @@ rndr_superscript(hoedown_buffer *ob, const hoedown_buffer *content, const hoedow
 }
 
 static void
+rndr_entity(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data)
+{
+	if (content)
+		hoedown_buffer_put(ob, content->data, content->size);
+}
+
+static void
 rndr_normal_text(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data)
 {
 	if (content)
@@ -655,7 +662,7 @@ hoedown_html_toc_renderer_new(int nesting_level)
 		NULL,
 		NULL,
 
-		NULL,
+		rndr_entity,
 		rndr_normal_text,
 
 		NULL,
@@ -718,7 +725,7 @@ hoedown_html_renderer_new(hoedown_html_flags render_flags, int nesting_level)
 		rndr_math,
 		rndr_raw_html,
 
-		NULL,
+		rndr_entity,
 		rndr_normal_text,
 
 		NULL,

@@ -942,7 +942,12 @@ char_escape(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t off
 		}
 		else hoedown_buffer_putc(ob, data[1]);
 	} else if (size == 1) {
-		hoedown_buffer_putc(ob, data[0]);
+		if (doc->md.normal_text) {
+			work.data = data;
+			work.size = 1;
+			doc->md.normal_text(ob, &work, &doc->data);
+		}
+		else hoedown_buffer_putc(ob, data[0]);
 	}
 
 	return 2;
@@ -971,6 +976,11 @@ char_entity(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t off
 		work.data = data;
 		work.size = end;
 		doc->md.entity(ob, &work, &doc->data);
+	}
+	else if (doc->md.normal_text) {
+		work.data = data;
+		work.size = end;
+		doc->md.normal_text(ob, &work, &doc->data);
 	}
 	else hoedown_buffer_put(ob, data, end);
 
