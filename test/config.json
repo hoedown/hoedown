@@ -120,6 +120,11 @@
             "input": "Tests/Images.text",
             "output": "Tests/Images.html",
             "flags": []
+        },
+        {
+            "input": "Tests/HeaderId.text",
+            "output": "Tests/HeaderId.html",
+            "flags": ["--header-id"]
         }
     ]
 }

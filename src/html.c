@@ -219,10 +219,14 @@ rndr_header(hoedown_buffer *ob, const hoedown_buffer *content, int level, const 
 	if (ob->size)
 		hoedown_buffer_putc(ob, '\n');
 
+	hoedown_buffer_printf(ob, "<h%d", level);
 	if (level <= state->toc_data.nesting_level)
-		hoedown_buffer_printf(ob, "<h%d id=\"toc_%d\">", level, state->toc_data.header_count++);
-	else
-		hoedown_buffer_printf(ob, "<h%d>", level);
+		hoedown_buffer_printf(ob, " id=\"toc_%d\"", state->toc_data.header_count++);
+	else if (content && (state->flags & HOEDOWN_HTML_HEADER_ID) != 0) {
+		HOEDOWN_BUFPUTSL(ob, " id=\"");
+		escape_href(ob, content->data, content->size);
+		hoedown_buffer_putc(ob, '"'); }
+	hoedown_buffer_putc(ob, '>');
 
 	if (content) hoedown_buffer_put(ob, content->data, content->size);
 	hoedown_buffer_printf(ob, "</h%d>\n", level);
