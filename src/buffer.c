@@ -113,6 +113,7 @@ hoedown_buffer_grow(hoedown_buffer *buf, size_t neosz)
 		neoasz += buf->unit;
 
 	buf->data = buf->data_realloc(buf->data, neoasz);
+	memset(&buf->data[buf->asize], 0, neoasz - buf->asize);
 	buf->asize = neoasz;
 }
 
