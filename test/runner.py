@@ -10,7 +10,7 @@ import unittest
 
 TEST_ROOT = os.path.dirname(__file__)
 PROJECT_ROOT = os.path.dirname(TEST_ROOT)
-HOEDOWN = [os.path.abspath(os.path.join(PROJECT_ROOT, 'hoedown'))]
+HOEDOWN = [os.environ.get('HOEDOWN', os.path.abspath(os.path.join(PROJECT_ROOT, 'hoedown')))]
 TIDY = ['tidy', '--show-body-only', '1', '--show-warnings', '0',
         '--quiet', '1']
 CONFIG_PATH = os.path.join(TEST_ROOT, 'config.json')
