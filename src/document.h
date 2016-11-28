@@ -164,6 +164,8 @@ void hoedown_document_render_inline(hoedown_document *doc, hoedown_buffer *ob, c
 /* hoedown_document_free: deallocate a document processor instance */
 void hoedown_document_free(hoedown_document *doc);
 
+/* parse_first_block • parsing of one block, the length that has been parsed is returned as o_parsed */
+int parse_first_block(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size, int *o_parsed);
 
 #ifdef __cplusplus
 }
