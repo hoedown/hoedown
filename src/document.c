@@ -980,6 +980,11 @@ char_entity(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t off
 		work.size = end;
 		doc->md.entity(ob, &work, &doc->data);
 	}
+	else if (doc->md.normal_text) {
+		work.data = data;
+		work.size = end;
+		doc->md.normal_text(ob, &work, &doc->data);
+	}
 	else hoedown_buffer_put(ob, data, end);
 
 	return end;
