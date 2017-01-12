@@ -8,3 +8,4 @@ hoedown.lib
 smartypants
 libhoedown.so*
 libhoedown.a
+test/tester

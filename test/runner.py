@@ -100,7 +100,32 @@ class MarkdownTestsMeta(type):
 
 
 class MarkdownTests(with_metaclass(MarkdownTestsMeta, unittest.TestCase)):
-    pass
+    def test_lines(self):
+        from os import listdir
+        from os.path import isfile, join, splitext
+
+        LINE_TESTS = "./test/line_tests"
+        files = [join(LINE_TESTS, f) for f in listdir(LINE_TESTS)
+                 if isfile(join(LINE_TESTS, f))]
+        indexes = {}
+        for f in files:
+            filename, file_extension = splitext(f)
+            if file_extension == ".md":
+                indexes[f] = filename + '.out'
+        for index in indexes:
+            content = ''
+            try:
+                with open(indexes[index], 'r') as fdd:
+                    content = fdd.read()
+            except Exception:
+                raise TestFailed(index,
+                                 'Missing file: "{}"'.format(indexes[index]),
+                                 '')
+            child = subprocess.Popen(["./test/tester", index],
+                                     stdout=subprocess.PIPE)
+            stdout = child.communicate()[0]
+            if stdout != content:
+                raise TestFailed(index, content, stdout)
 
 
 if __name__ == '__main__':

@@ -55,7 +55,8 @@ src/html_blocks.c: html_block_names.gperf
 
 # Testing
 
-test: hoedown
+test: hoedown libhoedown.a
+	$(CC) test/line.c libhoedown.a -o test/tester
 	python test/runner.py
 
 test-pl: hoedown
