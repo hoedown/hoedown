@@ -532,7 +532,7 @@ rndr_footnote_def(hoedown_buffer *ob, const hoedown_buffer *content, unsigned in
 	hoedown_buffer_printf(ob, "\n<li id=\"fn%d\">\n", num);
 	if (pfound) {
 		hoedown_buffer_put(ob, content->data, i);
-		hoedown_buffer_printf(ob, "&nbsp;<a href=\"#fnref%d\" rev=\"footnote\">&#8617;</a>", num);
+		hoedown_buffer_printf(ob, "&nbsp;<a href=\"#fnref%d\">&#8617;</a>", num);
 		hoedown_buffer_put(ob, content->data + i, content->size - i);
 	} else if (content) {
 		hoedown_buffer_put(ob, content->data, content->size);
