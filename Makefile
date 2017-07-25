@@ -51,7 +51,7 @@ smartypants: bin/smartypants.o $(HOEDOWN_SRC)
 # Perfect hashing
 
 src/html_blocks.c: html_block_names.gperf
-	gperf -L ANSI-C -N hoedown_find_block_tag -c -C -E -S 1 --ignore-case -m100 $^ > $@
+	gperf -I -L ANSI-C -N hoedown_find_block_tag -c -C -E -S 1 --ignore-case -m100 $^ > $@
 
 # Testing
 
