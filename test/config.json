@@ -85,8 +85,8 @@
             "output": "MarkdownTest_1.0.3/Tests/Tabs.html"
         },
         {
-            "input": "MarkdownTest_1.0.3/Tests/Tidyness.text",
-            "output": "MarkdownTest_1.0.3/Tests/Tidyness.html"
+            "input": "MarkdownTest_1.0.3/Tests/Tidiness.text",
+            "output": "MarkdownTest_1.0.3/Tests/Tidiness.html"
         },
         {
             "input": "Tests/Escape character.text",

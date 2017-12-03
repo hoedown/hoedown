@@ -2124,7 +2124,7 @@ htmlblock_find_end(
 }
 
 /* htmlblock_find_end_strict • try to find end of HTML block in strict mode */
-/*	(it must be an unindented line, and have a blank line afterwads) */
+/*	(it must be an unindented line, and have a blank line afterwards) */
 /*	returns the length on match, 0 otherwise */
 static size_t
 htmlblock_find_end_strict(
