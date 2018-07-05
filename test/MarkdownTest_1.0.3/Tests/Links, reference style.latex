@@ -1,0 +1,53 @@
+Foo \hyperref{/url/}{}{Title}{bar}.
+
+Foo \hyperref{/url/}{}{Title}{bar}.
+
+Foo \hyperref{/url/}{}{Title}{bar}.
+
+With \hyperref{/url/}{}{}{embedded [brackets]}.
+
+Indented \hyperref{/url}{}{}{once}.
+
+Indented \hyperref{/url}{}{}{twice}.
+
+Indented \hyperref{/url}{}{}{thrice}.
+
+Indented [four][] times.
+
+\begin{verbatim}
+[four]: /url
+\end{verbatim}
+
+\hrule\vskip\baselineskip
+
+\hyperref{foo}{}{}{this} should work
+
+So should \hyperref{foo}{}{}{this}.
+
+And \hyperref{foo}{}{}{this}.
+
+And \hyperref{foo}{}{}{this}.
+
+And \hyperref{foo}{}{}{this}.
+
+But not [that] [].
+
+Nor [that][].
+
+Nor [that].
+
+[Something in brackets like \hyperref{foo}{}{}{this} should work]
+
+[Same with \hyperref{foo}{}{}{this}.]
+
+In this case, \hyperref{/somethingelse/}{}{}{this} points to something else.
+
+Backslashing should suppress [this] and [this].
+
+\hrule\vskip\baselineskip
+
+Here's one where the \hyperref{/url/}{}{}{link
+breaks} across lines.
+
+Here's another where the \hyperref{/url/}{}{}{link 
+breaks} across lines, but with a line-ending space.

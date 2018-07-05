@@ -1,0 +1,22 @@
+\section{Standard table}
+
+\begin{tabular}{|r|r|}\hline
+headline1 & headline2\\\hline
+123 & \\\hline
+\end{tabular}
+
+\section{Cell alignment}
+
+\begin{tabular}{|l|c|r|}\hline
+headline1 & headline2 & headline3\\\hline
+123 &  & \\\hline
+\end{tabular}
+
+\section{Malformed table: missing cell at row in body}
+
+\begin{tabular}{|r|r|r|}\hline
+headline1 & headline2 & headline3\\\hline
+12 &  & \\\hline
+34 &  & \\\hline
+56 &  & \\\hline
+\end{tabular}

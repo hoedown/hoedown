@@ -1,0 +1,152 @@
+\subsection{Unordered}
+
+Asterisks tight:
+
+\begin{itemize}
+\item   asterisk 1
+\item   asterisk 2
+\item   asterisk 3
+\end{itemize}
+
+Asterisks loose:
+
+\begin{itemize}
+\item asterisk 1
+\item asterisk 2
+\item asterisk 3
+\end{itemize}
+
+\hrule\vskip\baselineskip
+
+Pluses tight:
+
+\begin{itemize}
+\item   Plus 1
+\item   Plus 2
+\item   Plus 3
+\end{itemize}
+
+Pluses loose:
+
+\begin{itemize}
+\item Plus 1
+\item Plus 2
+\item Plus 3
+\end{itemize}
+
+\hrule\vskip\baselineskip
+
+Minuses tight:
+
+\begin{itemize}
+\item   Minus 1
+\item   Minus 2
+\item   Minus 3
+\end{itemize}
+
+Minuses loose:
+
+\begin{itemize}
+\item Minus 1
+\item Minus 2
+\item Minus 3
+\end{itemize}
+
+\subsection{Ordered}
+
+Tight:
+
+\begin{enumerate}
+\item  First
+\item  Second
+\item  Third
+\end{enumerate}
+
+and:
+
+\begin{enumerate}
+\item One
+\item Two
+\item Three
+\end{enumerate}
+
+Loose using tabs:
+
+\begin{enumerate}
+\item First
+\item Second
+\item Third
+\end{enumerate}
+
+and using spaces:
+
+\begin{enumerate}
+\item One
+\item Two
+\item Three
+\end{enumerate}
+
+Multiple paragraphs:
+
+\begin{enumerate}
+\item Item 1, graf one.
+
+Item 2. graf two. The quick brown fox jumped over the lazy dog's
+back.
+\item Item 2.
+\item Item 3.
+\end{enumerate}
+
+\subsection{Nested}
+
+\begin{itemize}
+\item   Tab
+
+\begin{itemize}
+\item   Tab
+
+\begin{itemize}
+\item   Tab
+\end{itemize}
+\end{itemize}
+\end{itemize}
+
+Here's another:
+
+\begin{enumerate}
+\item First
+\item Second:
+
+\begin{itemize}
+\item Fee
+\item Fie
+\item Foe
+\end{itemize}
+\item Third
+\end{enumerate}
+
+Same thing but with paragraphs:
+
+\begin{enumerate}
+\item First
+\item Second:
+
+\begin{itemize}
+\item Fee
+\item Fie
+\item Foe
+\end{itemize}
+\item Third
+\end{enumerate}
+
+This was an error in Markdown 1.0.1:
+
+\begin{itemize}
+\item this
+
+\begin{itemize}
+\item   sub
+\end{itemize}
+
+that
+\end{itemize}

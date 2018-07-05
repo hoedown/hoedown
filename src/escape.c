@@ -186,3 +186,49 @@ hoedown_escape_html(hoedown_buffer *ob, const uint8_t *data, size_t size, int se
 		i++;
 	}
 }
+
+static const uint8_t LATEX_ESCAPE_TABLE[UINT8_MAX+1] = {
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+void
+hoedown_escape_latex(hoedown_buffer *ob, const uint8_t *data, size_t size, int secure)
+{
+	size_t i = 0, mark;
+
+	while (1) {
+		mark = i;
+		while (i < size && LATEX_ESCAPE_TABLE[data[i]] == 0) i++;
+
+		/* Optimization for cases where there's nothing to escape */
+		if (mark == 0 && i >= size) {
+			hoedown_buffer_put(ob, data, size);
+			return;
+		}
+
+		if (likely(i > mark))
+			hoedown_buffer_put(ob, data + mark, i - mark);
+
+		if (i >= size) break;
+
+		hoedown_buffer_putc(ob, '\\');
+		hoedown_buffer_putc(ob, data[i]);
+
+		i++;
+	}
+}

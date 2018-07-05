@@ -1,0 +1,4 @@
+This is a text[^1] with a footnote[^2]
+
+[^1]: Just an example footnote
+[^2]: A footnote is a comment on the text

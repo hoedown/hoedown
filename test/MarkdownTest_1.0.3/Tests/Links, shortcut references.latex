@@ -1,0 +1,9 @@
+This is the \hyperref{/simple}{}{}{simple case}.
+
+This one has a \hyperref{/foo}{}{}{line
+break}.
+
+This one has a \hyperref{/foo}{}{}{line 
+break} with a line-ending space.
+
+\hyperref{/that}{}{}{this} and the \hyperref{/other}{}{}{other}

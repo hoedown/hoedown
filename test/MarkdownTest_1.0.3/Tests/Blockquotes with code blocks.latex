@@ -1,0 +1,17 @@
+\begin{quotation}
+Example:
+
+\begin{verbatim}
+sub status {
+    print "working";
+}
+\end{verbatim}
+
+Or:
+
+\begin{verbatim}
+sub status {
+    return "working";
+}
+\end{verbatim}
+\end{quotation}

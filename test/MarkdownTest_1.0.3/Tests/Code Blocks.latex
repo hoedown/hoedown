@@ -1,0 +1,22 @@
+\begin{verbatim}
+code block on the first line
+\end{verbatim}
+
+Regular text.
+
+\begin{verbatim}
+code block indented by spaces
+\end{verbatim}
+
+Regular text.
+
+\begin{verbatim}
+the lines in this block  
+all contain trailing spaces  
+\end{verbatim}
+
+Regular Text.
+
+\begin{verbatim}
+code block on the last line
+\end{verbatim}

@@ -6,6 +6,8 @@ This is another tricky case: \![not image](/url).
 
 This is a reference ![image][ref].
 
+This is an ![image](/url "with a title").
+
 [ref]: /url2
 
 Terminating !

@@ -1,5 +1,6 @@
 #include "document.h"
 #include "html.h"
+#include "latex.h"
 
 #include "common.h"
 #include <time.h>
@@ -9,7 +10,8 @@
 
 enum renderer_type {
 	RENDERER_HTML,
-	RENDERER_HTML_TOC
+	RENDERER_HTML_TOC,
+	RENDERER_LATEX
 };
 
 struct extension_category_info {
@@ -24,7 +26,7 @@ struct extension_info {
 	const char *description;
 };
 
-struct html_flag_info {
+struct render_flag_info {
 	unsigned int flag;
 	const char *option_name;
 	const char *description;
@@ -57,11 +59,16 @@ static struct extension_info extensions_info[] = {
 	{HOEDOWN_EXT_DISABLE_INDENTED_CODE, "disable-indented-code", "Don't parse indented code blocks."},
 };
 
-static struct html_flag_info html_flags_info[] = {
+static struct render_flag_info html_flags_info[] = {
 	{HOEDOWN_HTML_SKIP_HTML, "skip-html", "Strip all HTML tags."},
 	{HOEDOWN_HTML_ESCAPE, "escape", "Escape all HTML."},
 	{HOEDOWN_HTML_HARD_WRAP, "hard-wrap", "Render each linebreak as <br>."},
 	{HOEDOWN_HTML_USE_XHTML, "xhtml", "Render XHTML."},
+};
+
+static struct render_flag_info latex_flags_info[] = {
+	{HOEDOWN_LATEX_HARD_WRAP, "hard-wrap", "Render each linebreak as \\\\."},
+	{HOEDOWN_LATEX_HEADER_ID, "header-id", "Generate hyperref labels for headers."},
 };
 
 static const char *category_prefix = "all-";
@@ -93,6 +100,7 @@ print_help(const char *basename)
 	print_option('t', "toc-level=N", "Maximum level for headers included in the TOC. Zero disables TOC (the default).");
 	print_option(  0, "html", "Render (X)HTML. The default.");
 	print_option(  0, "html-toc", "Render the Table of Contents in (X)HTML.");
+	print_option(  0, "latex", "Render LaTeX.");
 	print_option('T', "time", "Show time spent in rendering.");
 	print_option('i', "input-unit=N", "Reading block size. Default is " str(DEF_IUNIT) ".");
 	print_option('o', "output-unit=N", "Writing block size. Default is " str(DEF_OUNIT) ".");
@@ -116,8 +124,16 @@ print_help(const char *basename)
 	/* html-specific */
 	printf("HTML-specific options:\n");
 	for (i = 0; i < count_of(html_flags_info); i++) {
-		struct html_flag_info *html_flag = html_flags_info+i;
+		struct render_flag_info *html_flag = html_flags_info+i;
 		print_option(  0, html_flag->option_name, html_flag->description);
+	}
+	printf("\n");
+
+	/* latex-specific */
+	printf("LaTeX-specific options:\n");
+	for (i = 0; i < count_of(latex_flags_info); i++) {
+		struct render_flag_info *latex_flag = latex_flags_info+i;
+		print_option(  0, latex_flag->option_name, latex_flag->description);
 	}
 	printf("\n");
 
@@ -148,6 +164,7 @@ struct option_data {
 	enum renderer_type renderer;
 	int toc_level;
 	hoedown_html_flags html_flags;
+	hoedown_latex_flags latex_flags;
 
 	/* parsing */
 	hoedown_extensions extensions;
@@ -226,6 +243,7 @@ parse_category_option(char *opt, struct option_data *data)
 int
 parse_flag_option(char *opt, struct option_data *data)
 {
+	int found = 0;
 	size_t i;
 
 	for (i = 0; i < count_of(extensions_info); i++) {
@@ -237,19 +255,28 @@ parse_flag_option(char *opt, struct option_data *data)
 	}
 
 	for (i = 0; i < count_of(html_flags_info); i++) {
-		struct html_flag_info *html_flag = &html_flags_info[i];
+		struct render_flag_info *html_flag = &html_flags_info[i];
 		if (strcmp(opt, html_flag->option_name)==0) {
 			data->html_flags |= html_flag->flag;
-			return 1;
+			found = 1;
 		}
 	}
 
-	return 0;
+	for (i = 0; i < count_of(latex_flags_info); i++) {
+		struct render_flag_info *latex_flag = &latex_flags_info[i];
+		if (strcmp(opt, latex_flag->option_name)==0) {
+			data->latex_flags |= latex_flag->flag;
+			found = 1;
+		}
+	}
+
+	return found;
 }
 
 int
 parse_negative_option(char *opt, struct option_data *data)
 {
+	int found = 0;
 	size_t i;
 	const char *name = strprefix(opt, negative_prefix);
 	if (!name) return 0;
@@ -271,14 +298,22 @@ parse_negative_option(char *opt, struct option_data *data)
 	}
 
 	for (i = 0; i < count_of(html_flags_info); i++) {
-		struct html_flag_info *html_flag = &html_flags_info[i];
+		struct render_flag_info *html_flag = &html_flags_info[i];
 		if (strcmp(name, html_flag->option_name)==0) {
 			data->html_flags &= ~(html_flag->flag);
-			return 1;
+			found = 1;
 		}
 	}
 
-	return 0;
+	for (i = 0; i < count_of(latex_flags_info); i++) {
+		struct render_flag_info *latex_flag = &latex_flags_info[i];
+		if (strcmp(name, latex_flag->option_name)==0) {
+			data->latex_flags &= ~(latex_flag->flag);
+			found = 1;
+		}
+	}
+
+	return found;
 }
 
 int
@@ -332,6 +367,10 @@ parse_long_option(char *opt, char *next, void *opaque)
 		data->renderer = RENDERER_HTML_TOC;
 		return 1;
 	}
+	if (strcmp(opt, "latex")==0) {
+		data->renderer = RENDERER_LATEX;
+		return 1;
+	}
 
 	if (parse_category_option(opt, data) || parse_flag_option(opt, data) || parse_negative_option(opt, data))
 		return 1;
@@ -379,6 +418,7 @@ main(int argc, char **argv)
 	data.renderer = RENDERER_HTML;
 	data.toc_level = 0;
 	data.html_flags = 0;
+	data.latex_flags = 0;
 	data.extensions = 0;
 	data.max_nesting = DEF_MAX_NESTING;
 
@@ -414,6 +454,10 @@ main(int argc, char **argv)
 		case RENDERER_HTML_TOC:
 			renderer = hoedown_html_toc_renderer_new(data.toc_level);
 			renderer_free = hoedown_html_renderer_free;
+			break;
+		case RENDERER_LATEX:
+			renderer = hoedown_latex_renderer_new(data.latex_flags, data.toc_level);
+			renderer_free = hoedown_latex_renderer_free;
 			break;
 	};
 

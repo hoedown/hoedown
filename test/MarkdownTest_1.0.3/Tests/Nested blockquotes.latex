@@ -1,0 +1,9 @@
+\begin{quotation}
+foo
+
+\begin{quotation}
+bar
+\end{quotation}
+
+foo
+\end{quotation}

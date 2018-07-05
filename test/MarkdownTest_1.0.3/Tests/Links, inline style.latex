@@ -1,0 +1,11 @@
+Just a \hyperref{/url/}{}{}{URL}.
+
+\hyperref{/url/}{}{title}{URL and title}.
+
+\hyperref{/url/}{}{title preceded by two spaces}{URL and title}.
+
+\hyperref{/url/}{}{title preceded by a tab}{URL and title}.
+
+\hyperref{/url/}{}{title has spaces afterward}{URL and title}.
+
+\hyperref{}{}{}{Empty}.

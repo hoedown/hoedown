@@ -408,7 +408,7 @@ rndr_raw_html(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_rend
 }
 
 static void
-rndr_table(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data)
+rndr_table(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data, size_t columns, hoedown_table_flags *col_data)
 {
     if (ob->size) hoedown_buffer_putc(ob, '\n');
     HOEDOWN_BUFPUTSL(ob, "<table>\n");
@@ -443,7 +443,7 @@ rndr_tablerow(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_r
 }
 
 static void
-rndr_tablecell(hoedown_buffer *ob, const hoedown_buffer *content, hoedown_table_flags flags, const hoedown_renderer_data *data)
+rndr_tablecell(hoedown_buffer *ob, const hoedown_buffer *content, hoedown_table_flags flags, const hoedown_renderer_data *data, size_t col)
 {
 	if (flags & HOEDOWN_TABLE_HEADER) {
 		HOEDOWN_BUFPUTSL(ob, "<th");
@@ -532,7 +532,7 @@ rndr_footnote_def(hoedown_buffer *ob, const hoedown_buffer *content, unsigned in
 	hoedown_buffer_printf(ob, "\n<li id=\"fn%d\">\n", num);
 	if (pfound) {
 		hoedown_buffer_put(ob, content->data, i);
-		hoedown_buffer_printf(ob, "&nbsp;<a href=\"#fnref%d\" rev=\"footnote\">&#8617;</a>", num);
+		hoedown_buffer_printf(ob, "&nbsp;<a href=\"#fnref%d\">&#8617;</a>", num);
 		hoedown_buffer_put(ob, content->data + i, content->size - i);
 	} else if (content) {
 		hoedown_buffer_put(ob, content->data, content->size);
@@ -541,7 +541,7 @@ rndr_footnote_def(hoedown_buffer *ob, const hoedown_buffer *content, unsigned in
 }
 
 static int
-rndr_footnote_ref(hoedown_buffer *ob, unsigned int num, const hoedown_renderer_data *data)
+rndr_footnote_ref(hoedown_buffer *ob, const hoedown_buffer *content, unsigned int num, const hoedown_renderer_data *data)
 {
 	hoedown_buffer_printf(ob, "<sup id=\"fnref%d\"><a href=\"#fn%d\" rel=\"footnote\">%d</a></sup>", num, num, num);
 	return 1;

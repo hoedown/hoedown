@@ -38,13 +38,13 @@ Features
 
 	**Warning**: `Hoedown` doesn't validate or post-process the HTML in Markdown documents.
 	Unless you use `HTML_ESCAPE` or `HTML_SKIP`, you should strongly consider using a
-	good post-processor in conjunction with Hoedown to prevent client-side attacks.
+	good post-processor in conjunction with `Hoedown` to prevent client-side attacks.
 
 *	**Customizable renderers**
 
 	`Hoedown` is not stuck with XHTML output: the Markdown parser of the library
 	is decoupled from the renderer, so it's trivial to extend the library with
-	custom renderers. A fully functional (X)HTML renderer is included.
+	custom renderers. A fully functional (X)HTML and LaTeX renderer is included.
 
 *	**Optimized for speed**
 
@@ -102,3 +102,21 @@ and perform SmartyPants, respectively.
 If you are using [CocoaPods](http://cocoapods.org), just add the line `pod 'hoedown'` to your Podfile and call `pod install`.
 
 Or, if you prefer, you can just throw the files at `src` into your project.
+
+LaTeX Renderer
+--------------
+
+Depending on the `Hoedown` features and extensions used in the Markdown
+document the following LaTeX packages are required in the LaTeX preamble:
+
+* [`inputenc`](http://ctan.org/pkg/inputenc) when using UTF-8
+* [`ulem`](http://ctan.org/pkg/ulem) for underline and strikethrough
+* [`xcolor`](http://ctan.org/pkg/xcolor) for highlighted text
+* [`hyperref`](http://ctan.org/pkg/hyperref) for links
+* [`graphicx`](http://ctan.org/pkg/graphicx) for images
+* [`minted`](http://ctan.org/pkg/minted) for fenced code blocks
+
+See [`README.tex`](README.tex) as an example preamble. To render
+this README to a PDF run the following command:
+
+`$ pdflatex -shell-escape README.tex`

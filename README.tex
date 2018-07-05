@@ -1,0 +1,38 @@
+% README.tex - LaTeX preamble for the Hoedown README
+% Create PDF using:
+% $ pdflatex -shell-escape README.tex
+%
+\documentclass[a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[colorlinks=true]{hyperref}
+\usepackage{ulem}
+\usepackage{xcolor}
+\usepackage{minted}
+\usepackage{graphicx}
+\usepackage{authoraftertitle}
+
+\title{README}
+\author{Anatol Broder, Clemens Gruber, Devin Torres, \\%
+Jason Novinger, Vicent Marti, Xavier Mendez}
+\date{} % Comment this line to show the date
+
+\hypersetup{%
+pdftitle={\MyTitle},pdfauthor={\MyAuthor},%
+pdfsubject={The Hoedown Markdown Parser},%
+}
+\setminted{%
+frame=single,framesep=8pt,%
+}
+
+\immediate%
+\write18{%
+sed '4d' README.md % Exclude build status image
+| ./hoedown --latex --fenced-code 
+> README-md.tex
+}
+
+\begin{document}
+\maketitle
+\hrule
+\input{README-md.tex}
+\end{document}

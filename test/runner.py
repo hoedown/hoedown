@@ -45,27 +45,32 @@ class TestFailed(AssertionError):
 
 def _test_func(test_case):
     flags = test_case.get('flags') or []
+    input_file = os.path.join(TEST_ROOT, test_case['input'])
+    output_file = os.path.join(TEST_ROOT, test_case['output'])
     hoedown_proc = subprocess.Popen(
-        HOEDOWN + flags + [os.path.join(TEST_ROOT, test_case['input'])],
+        HOEDOWN + flags + [input_file],
         stdout=subprocess.PIPE,
     )
     stdoutdata = hoedown_proc.communicate()[0]
 
-    got_tidy_proc = subprocess.Popen(
-        TIDY, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    )
-    got = got_tidy_proc.communicate(input=stdoutdata)[0].strip()
+    if os.path.splitext(output_file)[1] == '.html':
+        got_tidy_proc = subprocess.Popen(
+            TIDY, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        )
+        got = got_tidy_proc.communicate(input=stdoutdata)[0].strip()
 
-    expected_tidy_proc = subprocess.Popen(
-        TIDY + [os.path.join(TEST_ROOT, test_case['output'])],
-        stdout=subprocess.PIPE,
-    )
-    expected = expected_tidy_proc.communicate()[0].strip()
-
-    # Cleanup.
-    hoedown_proc.stdout.close()
-    got_tidy_proc.stdout.close()
-    expected_tidy_proc.stdout.close()
+        expected_tidy_proc = subprocess.Popen(
+            TIDY + [output_file],
+            stdout=subprocess.PIPE,
+        )
+        expected = expected_tidy_proc.communicate()[0].strip()
+        hoedown_proc.stdout.close()
+        got_tidy_proc.stdout.close()
+        expected_tidy_proc.stdout.close()
+    else:
+        hoedown_proc.stdout.close()
+        got = stdoutdata
+        expected = ''.join(open(output_file).readlines())
 
     try:
         assert expected == got

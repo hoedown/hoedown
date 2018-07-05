@@ -1,0 +1,24 @@
+This is an \begin{figure*}
+\includegraphics*[width=\textwidth]{/url}
+\caption{image}
+\end{figure*}.
+
+This is a tricky !\begin{figure*}
+\includegraphics*[width=\textwidth]{/url}
+\caption{image}
+\end{figure*}.
+
+This is another tricky case: !\hyperref{/url}{}{}{not image}.
+
+This is a reference \begin{figure*}
+\includegraphics*[width=\textwidth]{/url2}
+\caption{image}
+\end{figure*}.
+
+This is an \begin{figure*}
+\includegraphics*[width=\textwidth]{/url}
+\caption{image}
+with a title
+\end{figure*}.
+
+Terminating !

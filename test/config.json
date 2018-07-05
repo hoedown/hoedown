@@ -17,20 +17,45 @@
             "output": "MarkdownTest_1.0.3/Tests/Blockquotes with code blocks.html"
         },
         {
+            "input": "MarkdownTest_1.0.3/Tests/Blockquotes with code blocks.text",
+            "output": "MarkdownTest_1.0.3/Tests/Blockquotes with code blocks.latex",
+            "flags": ["--latex"]
+        },
+        {
             "input": "MarkdownTest_1.0.3/Tests/Code Blocks.text",
             "output": "MarkdownTest_1.0.3/Tests/Code Blocks.html"
+        },
+        {
+            "input": "MarkdownTest_1.0.3/Tests/Code Blocks.text",
+            "output": "MarkdownTest_1.0.3/Tests/Code Blocks.latex",
+            "flags": ["--latex"]
         },
         {
             "input": "MarkdownTest_1.0.3/Tests/Code Spans.text",
             "output": "MarkdownTest_1.0.3/Tests/Code Spans.html"
         },
         {
+            "input": "MarkdownTest_1.0.3/Tests/Code Spans.text",
+            "output": "MarkdownTest_1.0.3/Tests/Code Spans.latex",
+            "flags": ["--latex"]
+        },
+        {
             "input": "MarkdownTest_1.0.3/Tests/Hard-wrapped paragraphs with list-like lines.text",
             "output": "MarkdownTest_1.0.3/Tests/Hard-wrapped paragraphs with list-like lines.html"
         },
         {
+            "input": "MarkdownTest_1.0.3/Tests/Hard-wrapped paragraphs with list-like lines.text",
+            "output": "MarkdownTest_1.0.3/Tests/Hard-wrapped paragraphs with list-like lines.latex",
+            "flags": ["--latex", "--hard-wrap"]
+        },
+        {
             "input": "MarkdownTest_1.0.3/Tests/Horizontal rules.text",
             "output": "MarkdownTest_1.0.3/Tests/Horizontal rules.html"
+        },
+        {
+            "input": "MarkdownTest_1.0.3/Tests/Horizontal rules.text",
+            "output": "MarkdownTest_1.0.3/Tests/Horizontal rules.latex",
+            "flags": ["--latex"]
         },
         {
             "input": "MarkdownTest_1.0.3/Tests/Inline HTML (Advanced).text",
@@ -49,12 +74,27 @@
             "output": "MarkdownTest_1.0.3/Tests/Links, inline style.html"
         },
         {
+            "input": "MarkdownTest_1.0.3/Tests/Links, inline style.text",
+            "output": "MarkdownTest_1.0.3/Tests/Links, inline style.latex",
+            "flags": ["--latex"]
+        },
+        {
             "input": "MarkdownTest_1.0.3/Tests/Links, reference style.text",
             "output": "MarkdownTest_1.0.3/Tests/Links, reference style.html"
         },
         {
+            "input": "MarkdownTest_1.0.3/Tests/Links, reference style.text",
+            "output": "MarkdownTest_1.0.3/Tests/Links, reference style.latex",
+            "flags": ["--latex"]
+        },
+        {
             "input": "MarkdownTest_1.0.3/Tests/Links, shortcut references.text",
             "output": "MarkdownTest_1.0.3/Tests/Links, shortcut references.html"
+        },
+        {
+            "input": "MarkdownTest_1.0.3/Tests/Links, shortcut references.text",
+            "output": "MarkdownTest_1.0.3/Tests/Links, shortcut references.latex",
+            "flags": ["--latex"]
         },
         {
             "input": "MarkdownTest_1.0.3/Tests/Literal quotes in titles.text",
@@ -73,12 +113,27 @@
             "output": "MarkdownTest_1.0.3/Tests/Nested blockquotes.html"
         },
         {
+            "input": "MarkdownTest_1.0.3/Tests/Nested blockquotes.text",
+            "output": "MarkdownTest_1.0.3/Tests/Nested blockquotes.latex",
+            "flags": ["--fenced-code", "--latex"]
+        },
+        {
             "input": "MarkdownTest_1.0.3/Tests/Ordered and unordered lists.text",
             "output": "MarkdownTest_1.0.3/Tests/Ordered and unordered lists.html"
         },
         {
+            "input": "MarkdownTest_1.0.3/Tests/Ordered and unordered lists.text",
+            "output": "MarkdownTest_1.0.3/Tests/Ordered and unordered lists.latex",
+            "flags": ["--latex"]
+        },
+        {
             "input": "MarkdownTest_1.0.3/Tests/Strong and em together.text",
             "output": "MarkdownTest_1.0.3/Tests/Strong and em together.html"
+        },
+        {
+            "input": "MarkdownTest_1.0.3/Tests/Strong and em together.text",
+            "output": "MarkdownTest_1.0.3/Tests/Strong and em together.latex",
+            "flags": ["--latex"]
         },
         {
             "input": "MarkdownTest_1.0.3/Tests/Tabs.text",
@@ -107,9 +162,76 @@
             "flags": ["--math"]
         },
         {
+            "input": "Tests/Math.text",
+            "output": "Tests/Math.latex",
+            "flags": ["--math", "--latex"]
+        },
+        {
             "input": "Tests/Underline.text",
             "output": "Tests/Underline.html",
             "flags": ["--underline"]
+        },
+        {
+            "input": "Tests/Underline.text",
+            "output": "Tests/Underline.latex",
+            "flags": ["--underline", "--latex"]
+        },
+        {
+            "input": "Tests/Highlight.text",
+            "output": "Tests/Highlight.html",
+            "flags": ["--highlight"]
+        },
+        {
+            "input": "Tests/Highlight.text",
+            "output": "Tests/Highlight.latex",
+            "flags": ["--highlight", "--latex"]
+        },
+        {
+            "input": "Tests/Emphasis.text",
+            "output": "Tests/Emphasis.html"
+        },
+        {
+            "input": "Tests/Emphasis.text",
+            "output": "Tests/Emphasis.latex",
+            "flags": ["--latex"]
+        },
+        {
+            "input": "Tests/DoubleEmphasis.text",
+            "output": "Tests/DoubleEmphasis.html"
+        },
+        {
+            "input": "Tests/DoubleEmphasis.text",
+            "output": "Tests/DoubleEmphasis.latex",
+            "flags": ["--latex"]
+        },
+        {
+            "input": "Tests/TripleEmphasis.text",
+            "output": "Tests/TripleEmphasis.html"
+        },
+        {
+            "input": "Tests/TripleEmphasis.text",
+            "output": "Tests/TripleEmphasis.latex",
+            "flags": ["--latex"]
+        },
+        {
+            "input": "Tests/Superscript.text",
+            "output": "Tests/Superscript.html",
+            "flags": ["--superscript"]
+        },
+        {
+            "input": "Tests/Superscript.text",
+            "output": "Tests/Superscript.latex",
+            "flags": ["--superscript", "--latex"]
+        },
+        {
+            "input": "Tests/Quote.text",
+            "output": "Tests/Quote.html",
+            "flags": ["--quote"]
+        },
+        {
+            "input": "Tests/Quote.text",
+            "output": "Tests/Quote.latex",
+            "flags": ["--quote", "--latex"]
         },
         {
             "input": "Tests/Table.text",
@@ -117,9 +239,48 @@
             "flags": ["--tables"]
         },
         {
+            "input": "Tests/Table.text",
+            "output": "Tests/Table.latex",
+            "flags": ["--latex", "--tables"]
+        },
+        {
+            "input": "Tests/Footnotes.text",
+            "output": "Tests/Footnotes.html",
+            "flags": ["--footnotes"]
+        },
+        {
+            "input": "Tests/Footnotes.text",
+            "output": "Tests/Footnotes.latex",
+            "flags": ["--latex", "--footnotes"]
+        },
+        {
+            "input": "Tests/FencedCode.text",
+            "output": "Tests/FencedCode.html",
+            "flags": ["--fenced-code"]
+        },
+        {
+            "input": "Tests/FencedCode.text",
+            "output": "Tests/FencedCode.latex",
+            "flags": ["--fenced-code", "--latex"]
+        },
+        {
             "input": "Tests/Images.text",
-            "output": "Tests/Images.html",
-            "flags": []
+            "output": "Tests/Images.html"
+        },
+        {
+            "input": "Tests/Images.text",
+            "output": "Tests/Images.latex",
+            "flags": ["--latex"]
+        },
+        {
+            "input": "Tests/Header.text",
+            "output": "Tests/HeaderPlain.latex",
+            "flags": ["--latex"]
+        },
+        {
+            "input": "Tests/Header.text",
+            "output": "Tests/HeaderWithId.latex",
+            "flags": ["--latex", "--header-id"]
         }
     ]
 }
