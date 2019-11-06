@@ -1,0 +1,3 @@
+[submodule "src/charter"]
+	path = src/charter
+	url = https://github.com/Mandarancio/charter.git

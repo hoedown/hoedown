@@ -1,0 +1,184 @@
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  html, body {
+    width: 210mm;
+    height: 297mm;
+  }
+  figure {page-break-inside: avoid;}
+  .abstract{page-break-inside: avoid;}
+}
+
+@media screen {
+  figure {page-break-inside: avoid;}
+  .abstract{page-break-inside: avoid;}
+}
+
+body
+{
+  font-size: 11pt;
+  margin-right: auto;
+  margin-left: auto;
+  max-width: 210mm;
+  background: #eee;
+  font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+}
+
+a {
+  color: #000;
+}
+
+.header{
+  margin-bottom: 20pt;
+}
+
+.document{
+  background: #fff;
+  padding: 10mm;
+  min-height: 100%
+}
+
+.title{
+  text-align:center;
+  text-transform: uppercase;
+  margin-bottom: 2.5mm;
+  margin-top: 0;
+}
+
+.authors{
+  text-align:center;
+  margin-bottom:0;
+  font-size: 12pt;
+}
+
+.affiliation{
+  font-size: 11pt;
+  text-align:center;
+}
+
+.inner
+{
+  text-align: justify;
+  text-justify: inter-word;
+  column-count: 2;
+  column-gap: 10mm;
+}
+
+.keywords{
+  margin-bottom: 10px;
+}
+
+.abstract{
+  background: #fafafa;
+  border: solid 1px #eee;
+  padding: 0mm 5mm 0mm 5mm;
+}
+.abstract > h2 {
+ font-size: 14pt;
+ margin-bottom: 2px;
+}
+
+figure{
+  margin-left: 0;
+  margin-right: 0;
+  padding: 5px;
+  border: solid 1px #eee;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+figcaption{
+  margin-top: 5px;
+  text-align: center;
+}
+
+pre
+{
+  font-size: 10pt;
+}
+
+figure > pre
+{
+  background: #eee;
+  padding: 5px 10px 5px 10px;
+  margin: 0;
+  color: #333;
+}
+
+table{
+  margin-left:auto;
+  margin-right:auto;
+  border: 2px solid #FFFFFF;
+  min-width: 70%;
+  text-align: center;
+  border-collapse: collapse;
+  border: 1px solid #333;
+}
+table td, table th {
+  padding: 3px 4px;
+}
+table tbody td {
+  font-size: 10pt;
+  border-left: 1px solid #333;
+}
+table tr:nth-child(even) {
+  background: #DADADA;
+}
+table thead {
+  background: #FFFFFF;
+  border-bottom: 1px solid #333;
+}
+table thead th {
+  font-size: 12pt;
+  font-weight: bold;
+  color: #333333;
+  text-align: center;
+  border-left: 1px solid #333;
+}
+table thead th:first-child {
+  border-left: none;
+}
+
+table.eq_table {
+  border-collapse: collapse;
+  border: 0;
+  width: 100%;
+}
+table.eq_table td, table.eq_table th {
+  padding: 3px 2px;
+  font-size: 11pt;
+  border-left: 0;
+}
+table.eq_table tfoot td {
+  font-size: 11pt;
+  border-left: 0;
+}
+table.eq_table tfoot .links {
+  text-align: right;
+}
+table.eq_table tfoot .links a{
+  display: inline-block;
+  background: #1C6EA4;
+  color: #FFFFFF;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+
+td.counter {
+  text-align: right;
+
+}
+
+td.eq_code {
+  width: 100%;
+  text-align: center;
+}
+
+
+
