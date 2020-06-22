@@ -117,6 +117,11 @@
             "flags": ["--tables"]
         },
         {
+            "input": "Tests/extras/List_Item_Fenced_Code_First_Line.text",
+            "output": "Tests/extras/List_Item_Fenced_Code_First_Line.html",
+            "flags": ["--fenced-code"]
+        },
+        {
             "input": "Tests/Images.text",
             "output": "Tests/Images.html",
             "flags": []

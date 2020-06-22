@@ -1863,6 +1863,13 @@ parse_listitem(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t 
 	while (end < size && data[end - 1] != '\n')
 		end++;
 
+	if (doc->ext_flags & HOEDOWN_EXT_FENCED_CODE) {
+		if (is_codefence(data + beg, end - beg, NULL, NULL)) {
+			in_fence = 1;
+			fence_pre = beg;
+		}
+	}
+
 	/* getting working buffers */
 	work = newbuf(doc, BUFFER_SPAN);
 	inter = newbuf(doc, BUFFER_SPAN);

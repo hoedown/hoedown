@@ -1,0 +1,15 @@
+[hoedown/hoedown#236](https://github.com/hoedown/hoedown/issues/236) =
+[kjdev/hoextdown#57](https://github.com/kjdev/hoextdown/issues/57)
+
+1. First item.
+
+1. ```
+   Some code.
+   More code.
+   ```
+
+   There is code here.
+
+1. Third item.
+
+End of this list.
